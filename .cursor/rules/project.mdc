@@ -3,6 +3,13 @@ alwaysApply: true
 ---
 You are building an Expo app called GroceryApp. This is considered as the forntend of grocerybot.net.
 
+While this integrates with api.grocerybot.net, it should be accessible offline.
+
+Basic requirements: one must be able to:
+1. Create, read, delete groceries
+2. Select guilds (default is the first one from GET /guilds)
+3. All data must be available offline (though no writes) - I want them to be able to use the app in the grocery store without any signals
+
 API docs: https://github.com/verzac/grocer-discord-bot/blob/master/openapi.yaml
 
 Integration guide: https://github.com/verzac/grocer-discord-bot/blob/master/.cursor/specs/SPEC-001-auth-rework-for-apps/integration-guide.md
