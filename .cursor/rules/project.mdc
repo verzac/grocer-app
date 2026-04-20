@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+You are building an Expo app called GroceryApp. This is considered as the forntend of grocerybot.net.
+
+API docs: https://github.com/verzac/grocer-discord-bot/blob/master/openapi.yaml
+
+Integration guide: https://github.com/verzac/grocer-discord-bot/blob/master/.cursor/specs/SPEC-001-auth-rework-for-apps/integration-guide.md

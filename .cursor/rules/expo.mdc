@@ -1,0 +1,15 @@
+---
+globs: *.tsx,*.ts,package.json
+alwaysApply: false
+---
+
+Stack:
+- pnpm
+- Expo
+- swr for data-fetching
+- react-redux for global state _if needed_, else feel free to omit it
+  - if we're using react-redux, consider using react-native-mmkv (see https://github.com/mrousavy/react-native-mmkv)
+- Expo Secure Store to store auth tokens
+- Expo Router for navigation
+
+No design library please (except for things like reanimated which is needed to easily do animations). Implement and style components like Buttons yourself.
