@@ -5,21 +5,19 @@ import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
-import { getApiBaseUrl, getDiscordClientId } from '@/lib/config';
+import {
+  DISCORD_OAUTH_SCOPES,
+  getApiBaseUrl,
+  getDiscordClientId,
+  getDiscordOAuthRedirectUri,
+} from '@/lib/config';
 import type { TokenResponse } from '@/lib/api/types';
 import { setTokens } from '@/lib/storage/secureTokens';
 
 export default function LoginScreen() {
   const router = useRouter();
   const clientId = getDiscordClientId();
-  const redirectUri = useMemo(
-    () =>
-      AuthSession.makeRedirectUri({
-        scheme: 'grocerybot',
-        path: 'auth/callback',
-      }),
-    [],
-  );
+  const redirectUri = useMemo(() => getDiscordOAuthRedirectUri(), []);
 
   const discovery = useMemo(
     () => ({
@@ -30,9 +28,9 @@ export default function LoginScreen() {
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
-      clientId: clientId || 'placeholder',
+      clientId,
       redirectUri,
-      scopes: ['identify', 'guilds'],
+      scopes: [...DISCORD_OAUTH_SCOPES],
       responseType: AuthSession.ResponseType.Code,
     },
     discovery,
@@ -84,8 +82,6 @@ export default function LoginScreen() {
     exchange();
   }, [response, request, redirectUri, router]);
 
-  const missingClient = !clientId;
-
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom', 'left', 'right']}>
       <View style={styles.card}>
@@ -95,19 +91,12 @@ export default function LoginScreen() {
           {getApiBaseUrl()}.
         </Text>
 
-        {missingClient && (
-          <Text style={styles.warn}>
-            Set EXPO_PUBLIC_DISCORD_CLIENT_ID (see app.config.ts) to your Discord application
-            client ID.
-          </Text>
-        )}
-
         {error && <Text style={styles.err}>{error}</Text>}
 
         <Button
           title="Continue with Discord"
           loading={busy}
-          disabled={missingClient || !request}
+          disabled={!request}
           onPress={() => {
             setError(null);
             promptAsync().catch((e) => {
@@ -116,10 +105,9 @@ export default function LoginScreen() {
           }}
         />
 
-        <Text style={styles.hint}>Redirect URI must match: {redirectUri}</Text>
+        <Text style={styles.hint}>Redirect URI: {redirectUri}</Text>
         <Text style={styles.hintSmall}>
-          Add this exact URI in the Discord Developer Portal under OAuth2 → Redirects, and ensure
-          the API allowlists it.
+          This must match Discord OAuth2 → Redirects and the API allowlist for token exchange.
         </Text>
       </View>
     </SafeAreaView>
@@ -150,11 +138,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: '#cbd5e1',
-  },
-  warn: {
-    color: '#fbbf24',
-    fontSize: 14,
-    lineHeight: 20,
   },
   err: {
     color: '#fecaca',

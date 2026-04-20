@@ -8,7 +8,7 @@ const config: ExpoConfig = {
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
   newArchEnabled: true,
-  scheme: 'grocerybot',
+  scheme: 'groceryapp',
   splash: {
     image: './assets/splash-icon.png',
     resizeMode: 'contain',
@@ -32,7 +32,7 @@ const config: ExpoConfig = {
         autoVerify: true,
         data: [
           {
-            scheme: 'grocerybot',
+            scheme: 'groceryapp',
             host: 'auth',
             pathPrefix: '/callback',
           },
@@ -51,7 +51,8 @@ const config: ExpoConfig = {
   },
   extra: {
     apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.grocerybot.net',
-    discordClientId: process.env.EXPO_PUBLIC_DISCORD_CLIENT_ID ?? '',
+    discordClientId: '815120759680532510',
+    oauthRedirectUri: 'groceryapp://auth/callback',
   },
 };
 
