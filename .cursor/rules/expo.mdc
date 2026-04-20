@@ -5,6 +5,7 @@ alwaysApply: false
 
 Stack:
 - pnpm
+- TypeScript
 - Expo
 - swr for data-fetching
 - react-redux for global state _if needed_, else feel free to omit it
