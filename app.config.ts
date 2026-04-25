@@ -7,7 +7,6 @@ const config: ExpoConfig = {
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
-  newArchEnabled: true,
   scheme: 'groceryapp',
   splash: {
     image: './assets/splash-icon.png',
@@ -23,7 +22,6 @@ const config: ExpoConfig = {
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#0f172a',
     },
-    edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: 'net.grocerybot.app',
     intentFilters: [
@@ -45,7 +43,12 @@ const config: ExpoConfig = {
     favicon: './assets/favicon.png',
     bundler: 'metro',
   },
-  plugins: ['expo-router', 'expo-secure-store'],
+  plugins: [
+    'expo-dev-client',
+    'expo-router',
+    'expo-secure-store',
+    '@react-native-async-storage/expo-with-async-storage',
+  ],
   experiments: {
     typedRoutes: true,
   },
@@ -53,6 +56,9 @@ const config: ExpoConfig = {
     apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.grocerybot.net',
     discordClientId: '815120759680532510',
     oauthRedirectUri: 'groceryapp://auth/callback',
+    eas: {
+      projectId: '16bf991e-d6e0-45c7-b22a-c2630c2052be',
+    },
   },
 };
 
