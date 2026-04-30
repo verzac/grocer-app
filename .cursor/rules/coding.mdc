@@ -1,0 +1,7 @@
+---
+globs: *.tsx,*.ts
+alwaysApply: false
+---
+
+# Use SWR for fetches and mutations
+No exceptions. When writing a SWR hook that does not exist yet, put it under `/hooks/data` e.g. `/hooks/data/useMyResource.ts`

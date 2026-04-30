@@ -3,6 +3,8 @@ import * as SecureStore from 'expo-secure-store';
 const ACCESS = 'gb_access_token';
 const REFRESH = 'gb_refresh_token';
 const EXPIRES_AT = 'gb_access_expires_at_ms';
+const PENDING_CODE_VERIFIER = 'gb_pending_code_verifier';
+const PENDING_OAUTH_STATE = 'gb_pending_oauth_state';
 
 export async function getAccessToken(): Promise<string | null> {
   return SecureStore.getItemAsync(ACCESS);
@@ -39,4 +41,28 @@ export async function getAccessExpiresAt(): Promise<number | null> {
 export async function hasSession(): Promise<boolean> {
   const r = await getRefreshToken();
   return !!r;
+}
+
+export async function setPendingOAuth(
+  codeVerifier: string,
+  state: string,
+): Promise<void> {
+  await SecureStore.setItemAsync(PENDING_CODE_VERIFIER, codeVerifier);
+  await SecureStore.setItemAsync(PENDING_OAUTH_STATE, state);
+}
+
+export async function getPendingOAuth(): Promise<{
+  codeVerifier: string | null;
+  state: string | null;
+}> {
+  const [codeVerifier, state] = await Promise.all([
+    SecureStore.getItemAsync(PENDING_CODE_VERIFIER),
+    SecureStore.getItemAsync(PENDING_OAUTH_STATE),
+  ]);
+  return { codeVerifier, state };
+}
+
+export async function clearPendingOAuth(): Promise<void> {
+  await SecureStore.deleteItemAsync(PENDING_CODE_VERIFIER);
+  await SecureStore.deleteItemAsync(PENDING_OAUTH_STATE);
 }

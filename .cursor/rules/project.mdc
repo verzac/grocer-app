@@ -1,7 +1,7 @@
 ---
 alwaysApply: true
 ---
-You are building an Expo app called GroceryApp. This is considered as the forntend of grocerybot.net.
+You are building an Expo app called GroceryApp. This is considered as the frontend of grocerybot.net.
 
 While this integrates with api.grocerybot.net, it should be accessible offline.
 

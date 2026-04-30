@@ -129,6 +129,25 @@ export async function logoutSession(): Promise<void> {
   await clearTokens();
 }
 
+export async function exchangeAuthCode(body: {
+  code: string;
+  code_verifier: string;
+  redirect_uri: string;
+}): Promise<TokenResponse> {
+  const res = await fetch(`${getApiBaseUrl()}/auth/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Token exchange failed (${res.status})`);
+  }
+
+  return res.json() as Promise<TokenResponse>;
+}
+
 /** Clears local tokens; calls POST /auth/logout when online. */
 export async function signOut(online: boolean): Promise<void> {
   if (online) {

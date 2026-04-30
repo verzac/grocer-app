@@ -5,14 +5,13 @@ import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
+import { useTokenExchange } from '@/hooks/data/useTokenExchange';
 import {
   DISCORD_OAUTH_SCOPES,
-  getApiBaseUrl,
   getDiscordClientId,
   getDiscordOAuthRedirectUri,
 } from '@/lib/config';
-import type { TokenResponse } from '@/lib/api/types';
-import { setTokens } from '@/lib/storage/secureTokens';
+import { clearPendingOAuth, setPendingOAuth, setTokens } from '@/lib/storage/secureTokens';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -38,6 +37,7 @@ export default function LoginScreen() {
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { trigger: exchangeToken, isMutating } = useTokenExchange();
 
   useEffect(() => {
     async function exchange() {
@@ -47,27 +47,21 @@ export default function LoginScreen() {
         setError('No authorization code returned.');
         return;
       }
+      if (!request.codeVerifier) {
+        setError('Missing PKCE verifier. Please try again.');
+        return;
+      }
 
       setBusy(true);
       setError(null);
       try {
-        const res = await fetch(`${getApiBaseUrl()}/auth/token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code,
-            code_verifier: request.codeVerifier,
-            redirect_uri: redirectUri,
-          }),
+        const data = await exchangeToken({
+          code,
+          codeVerifier: request.codeVerifier,
+          redirectUri,
         });
-
-        if (!res.ok) {
-          const t = await res.text();
-          throw new Error(t || `Token exchange failed (${res.status})`);
-        }
-
-        const data = (await res.json()) as TokenResponse;
         await setTokens(data.access_token, data.refresh_token, data.expires_in);
+        await clearPendingOAuth();
         console.log('###login: token exchange ok');
         router.replace('/(app)');
       } catch (e) {
@@ -80,28 +74,35 @@ export default function LoginScreen() {
     }
 
     exchange();
-  }, [response, request, redirectUri, router]);
+  }, [exchangeToken, response, request, redirectUri, router]);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom', 'left', 'right']}>
       <View style={styles.card}>
         <Text style={styles.title}>GroceryApp</Text>
         <Text style={styles.subtitle}>
-          Sign in with Discord to manage groceries for your servers. Data syncs from{' '}
-          {getApiBaseUrl()}.
+          Sign in with Discord to manage groceries for your servers.
         </Text>
 
         {error && <Text style={styles.err}>{error}</Text>}
 
         <Button
           title="Continue with Discord"
-          loading={busy}
+          loading={busy || isMutating}
           disabled={!request}
-          onPress={() => {
+          onPress={async () => {
             setError(null);
-            promptAsync().catch((e) => {
+            if (!request?.codeVerifier || !request.state) {
+              setError('OAuth request is not ready. Please try again.');
+              return;
+            }
+
+            try {
+              await setPendingOAuth(request.codeVerifier, request.state);
+              await promptAsync();
+            } catch (e) {
               setError(e instanceof Error ? e.message : 'OAuth failed');
-            });
+            }
           }}
         />
 
