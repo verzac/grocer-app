@@ -121,8 +121,8 @@ export default function GroceriesScreen() {
       byList.set(key, arr);
     }
     const order: (string | number)[] = [];
-    groceryData?.grocery_lists?.forEach((l) => order.push(l.id));
     if (byList.has('default')) order.push('default');
+    groceryData?.grocery_lists?.forEach((l) => order.push(l.id));
     for (const k of byList.keys()) {
       if (!order.includes(k)) order.push(k);
     }

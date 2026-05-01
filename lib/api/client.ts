@@ -1,6 +1,14 @@
 import { getApiBaseUrl } from '@/lib/config';
 import type { GuildGroceryList, TokenResponse, UserGuildsResponse } from '@/lib/api/types';
 import {
+  shouldRetryHttpForGet,
+  throwUnlessRetryableGet,
+  timedFetch,
+  TransientHttpError,
+  TRANSIENT_RETRY_ATTEMPTS,
+  withTransientRetries,
+} from '@/lib/api/timedFetch';
+import {
   clearTokens,
   getAccessExpiresAt,
   getAccessToken,
@@ -14,23 +22,26 @@ async function refreshAccessToken(): Promise<string | null> {
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
-    const refresh = await getRefreshToken();
-    if (!refresh) return null;
+    return withTransientRetries(TRANSIENT_RETRY_ATTEMPTS, async () => {
+      const refresh = await getRefreshToken();
+      if (!refresh) return null;
 
-    const res = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refresh }),
+      const res = await timedFetch(`${getApiBaseUrl()}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refresh }),
+      });
+
+      if (!res.ok) {
+        if (shouldRetryHttpForGet(res.status)) throw new TransientHttpError(res.status);
+        await clearTokens();
+        return null;
+      }
+
+      const data = (await res.json()) as TokenResponse;
+      await setTokens(data.access_token, data.refresh_token, data.expires_in);
+      return data.access_token;
     });
-
-    if (!res.ok) {
-      await clearTokens();
-      return null;
-    }
-
-    const data = (await res.json()) as TokenResponse;
-    await setTokens(data.access_token, data.refresh_token, data.expires_in);
-    return data.access_token;
   })();
 
   try {
@@ -65,7 +76,7 @@ export async function fetchWithAuth(
     headers.set('X-Guild-ID', guildId);
   }
 
-  let res = await fetch(`${getApiBaseUrl()}${path}`, { ...rest, headers });
+  let res = await timedFetch(`${getApiBaseUrl()}${path}`, { ...rest, headers });
 
   if (res.status === 401) {
     const next = await refreshAccessToken();
@@ -73,26 +84,26 @@ export async function fetchWithAuth(
     const h2 = new Headers(rest.headers);
     h2.set('Authorization', `Bearer ${next}`);
     if (guildId) h2.set('X-Guild-ID', guildId);
-    res = await fetch(`${getApiBaseUrl()}${path}`, { ...rest, headers: h2 });
+    res = await timedFetch(`${getApiBaseUrl()}${path}`, { ...rest, headers: h2 });
   }
 
   return res;
 }
 
 export async function getGuilds(): Promise<UserGuildsResponse> {
-  const res = await fetchWithAuth('/guilds');
-  if (!res.ok) {
-    throw new Error(`GET /guilds failed: ${res.status}`);
-  }
-  return res.json() as Promise<UserGuildsResponse>;
+  return withTransientRetries(TRANSIENT_RETRY_ATTEMPTS, async () => {
+    const res = await fetchWithAuth('/guilds');
+    throwUnlessRetryableGet(res, 'GET /guilds failed');
+    return res.json() as Promise<UserGuildsResponse>;
+  });
 }
 
 export async function getGroceryLists(guildId: string): Promise<GuildGroceryList> {
-  const res = await fetchWithAuth('/grocery-lists', { guildId });
-  if (!res.ok) {
-    throw new Error(`GET /grocery-lists failed: ${res.status}`);
-  }
-  return res.json() as Promise<GuildGroceryList>;
+  return withTransientRetries(TRANSIENT_RETRY_ATTEMPTS, async () => {
+    const res = await fetchWithAuth('/grocery-lists', { guildId });
+    throwUnlessRetryableGet(res, 'GET /grocery-lists failed');
+    return res.json() as Promise<GuildGroceryList>;
+  });
 }
 
 export async function createGrocery(
@@ -112,20 +123,24 @@ export async function createGrocery(
 }
 
 export async function deleteGrocery(guildId: string, id: number): Promise<void> {
-  const res = await fetchWithAuth(`/groceries/${id}`, {
-    method: 'DELETE',
-    guildId,
-  });
-  if (!res.ok && res.status !== 204) {
+  await withTransientRetries(TRANSIENT_RETRY_ATTEMPTS, async () => {
+    const res = await fetchWithAuth(`/groceries/${id}`, {
+      method: 'DELETE',
+      guildId,
+    });
+    if (res.ok) return;
+    if (shouldRetryHttpForGet(res.status)) throw new TransientHttpError(res.status);
     throw new Error(`DELETE /groceries/${id} failed: ${res.status}`);
-  }
+  });
 }
 
 export async function logoutSession(): Promise<void> {
-  const res = await fetchWithAuth('/auth/logout', { method: 'POST' });
-  if (res.status !== 204 && res.status !== 401) {
-    await res.text();
-  }
+  await withTransientRetries(TRANSIENT_RETRY_ATTEMPTS, async () => {
+    const res = await fetchWithAuth('/auth/logout', { method: 'POST' });
+    if (res.status === 204 || res.status === 401) return;
+    await res.text().catch(() => {});
+    if (shouldRetryHttpForGet(res.status)) throw new TransientHttpError(res.status);
+  });
   await clearTokens();
 }
 
@@ -134,7 +149,7 @@ export async function exchangeAuthCode(body: {
   code_verifier: string;
   redirect_uri: string;
 }): Promise<TokenResponse> {
-  const res = await fetch(`${getApiBaseUrl()}/auth/token`, {
+  const res = await timedFetch(`${getApiBaseUrl()}/auth/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
