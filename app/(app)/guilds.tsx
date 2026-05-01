@@ -1,47 +1,55 @@
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import useSWR from 'swr';
+import { useRouter } from 'expo-router'
+import { useEffect, useState } from 'react'
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import useSWR from 'swr'
 
-import { Button } from '@/components/ui/Button';
-import { useOnline } from '@/hooks/useOnline';
-import { getGuilds, signOut } from '@/lib/api/client';
-import type { UserGuild } from '@/lib/api/types';
-import { loadGuildsCache, saveGuildsCache } from '@/lib/storage/offlineCache';
-import { clearSelectedGuildId, getSelectedGuildId, setSelectedGuildId } from '@/lib/storage/guildSelection';
+import { Button } from '@/components/ui/Button'
+import { useOnline } from '@/hooks/useOnline'
+import { getGuilds, signOut } from '@/lib/api/client'
+import type { UserGuild } from '@/lib/api/types'
+import { loadGuildsCache, saveGuildsCache } from '@/lib/storage/offlineCache'
+import {
+  clearSelectedGuildId,
+  getSelectedGuildId,
+  setSelectedGuildId,
+} from '@/lib/storage/guildSelection'
 export default function GuildsScreen() {
-  const router = useRouter();
-  const online = useOnline();
-  const [cached, setCached] = useState<UserGuild[]>([]);
-  const [currentId, setCurrentId] = useState<string | null>(null);
+  const router = useRouter()
+  const online = useOnline()
+  const [cached, setCached] = useState<UserGuild[]>([])
+  const [currentId, setCurrentId] = useState<string | null>(null)
 
   useEffect(() => {
     loadGuildsCache().then((g) => {
-      if (g?.length) setCached(g);
-    });
-    getSelectedGuildId().then(setCurrentId);
-  }, []);
+      if (g?.length) setCached(g)
+    })
+    getSelectedGuildId().then(setCurrentId)
+  }, [])
 
-  const { data, error, isLoading, mutate } = useSWR(online ? 'guilds' : null, getGuilds, {
-    revalidateOnFocus: true,
-    onSuccess: (res) => saveGuildsCache(res.guilds).catch(() => {}),
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    online ? 'guilds' : null,
+    getGuilds,
+    {
+      revalidateOnFocus: true,
+      onSuccess: (res) => saveGuildsCache(res.guilds).catch(() => {}),
+    },
+  )
 
-  const guilds = data?.guilds ?? cached;
+  const guilds = data?.guilds ?? cached
 
   const pick = async (id: string) => {
-    setCurrentId(id);
-    await setSelectedGuildId(id);
-    router.back();
-  };
+    setCurrentId(id)
+    await setSelectedGuildId(id)
+    router.back()
+  }
 
   const onLogout = async () => {
-    await signOut(online);
-    await clearSelectedGuildId();
-    console.log('###session: logged out');
-    router.replace('/(auth)/login');
-  };
+    await signOut(online)
+    await clearSelectedGuildId()
+    console.log('###session: logged out')
+    router.replace('/(auth)/login')
+  }
 
   return (
     <SafeAreaView style={styles.screen} edges={['bottom', 'left', 'right']}>
@@ -62,7 +70,7 @@ export default function GuildsScreen() {
           </Text>
         }
         renderItem={({ item }) => {
-          const active = item.id === currentId;
+          const active = item.id === currentId
           return (
             <Pressable
               onPress={() => pick(item.id)}
@@ -72,16 +80,20 @@ export default function GuildsScreen() {
               <Text style={styles.name}>{item.name}</Text>
               {active && <Text style={styles.badge}>Selected</Text>}
             </Pressable>
-          );
+          )
         }}
       />
 
       <View style={styles.footer}>
-        <Button title="Back" variant="secondary" onPress={() => router.back()} />
+        <Button
+          title="Back"
+          variant="secondary"
+          onPress={() => router.back()}
+        />
         <Button title="Log out" variant="danger" onPress={onLogout} />
       </View>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -111,7 +123,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   row: {
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 12,
     borderRadius: 12,
     backgroundColor: '#1e293b',
@@ -138,7 +150,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   footer: {
-    gap: 10,
+    gap: 8,
     marginTop: 16,
   },
-});
+})

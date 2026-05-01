@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
   offlineBanner: {
     backgroundColor: '#422006',
     borderRadius: 10,
-    padding: 10,
+    padding: 12,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#854d0e',
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
   },
   addRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     alignItems: 'center',
   },
   groceryFlatList: {
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1e293b',
     borderRadius: 12,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     color: '#f8fafc',
     borderWidth: 1,
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
   listPickLabel: {
     color: '#94a3b8',
     fontSize: 12,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   listPill: {
     paddingHorizontal: 12,
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#334155',
   },
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   deleteHit: {
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 8,
   },
   delete: {

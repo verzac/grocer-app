@@ -6,14 +6,14 @@ import {
   type PressableProps,
   type TextStyle,
   type ViewStyle,
-} from 'react-native';
+} from 'react-native'
 
 type Props = PressableProps & {
-  title: string;
-  variant?: 'primary' | 'secondary' | 'danger';
-  loading?: boolean;
-  textStyle?: TextStyle;
-};
+  title: string
+  variant?: 'primary' | 'secondary' | 'danger'
+  loading?: boolean
+  textStyle?: TextStyle
+}
 
 export function Button({
   title,
@@ -24,7 +24,7 @@ export function Button({
   style,
   ...rest
 }: Props) {
-  const palette = variants[variant];
+  const palette = variants[variant]
   return (
     <Pressable
       accessibilityRole="button"
@@ -44,7 +44,7 @@ export function Button({
         <Text style={[styles.label, palette.label, textStyle]}>{title}</Text>
       )}
     </Pressable>
-  );
+  )
 }
 
 const variants = {
@@ -54,7 +54,11 @@ const variants = {
     indicator: '#f8fafc',
   },
   secondary: {
-    container: { backgroundColor: '#1e293b', borderWidth: 1, borderColor: '#334155' },
+    container: {
+      backgroundColor: '#1e293b',
+      borderWidth: 1,
+      borderColor: '#334155',
+    },
     label: { color: '#e2e8f0' },
     indicator: '#e2e8f0',
   },
@@ -63,12 +67,12 @@ const variants = {
     label: { color: '#fef2f2' },
     indicator: '#fef2f2',
   },
-} as const;
+} as const
 
 const styles = StyleSheet.create({
   base: {
-    paddingVertical: 14,
-    paddingHorizontal: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -84,4 +88,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.88,
   },
-});
+})
