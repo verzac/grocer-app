@@ -1,4 +1,4 @@
-import type { ExpoConfig } from 'expo/config';
+import type { ExpoConfig } from 'expo/config'
 
 const config: ExpoConfig = {
   name: 'GroceryApp',
@@ -52,13 +52,14 @@ const config: ExpoConfig = {
     typedRoutes: true,
   },
   extra: {
-    apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.grocerybot.net',
+    apiBaseUrl:
+      process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.grocerybot.net',
     discordClientId: '815120759680532510',
     oauthRedirectUri: 'groceryapp://auth/callback',
     eas: {
       projectId: '16bf991e-d6e0-45c7-b22a-c2630c2052be',
     },
   },
-};
+}
 
-export default config;
+export default config

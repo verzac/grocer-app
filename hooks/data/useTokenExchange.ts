@@ -1,12 +1,12 @@
-import useSWRMutation from 'swr/mutation';
+import useSWRMutation from 'swr/mutation'
 
-import { exchangeAuthCode } from '@/lib/api/client';
+import { exchangeAuthCode } from '@/lib/api/client'
 
 type ExchangeArgs = {
-  code: string;
-  codeVerifier: string;
-  redirectUri: string;
-};
+  code: string
+  codeVerifier: string
+  redirectUri: string
+}
 
 export function useTokenExchange() {
   return useSWRMutation(
@@ -17,5 +17,5 @@ export function useTokenExchange() {
         code_verifier: arg.codeVerifier,
         redirect_uri: arg.redirectUri,
       }),
-  );
+  )
 }

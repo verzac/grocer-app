@@ -1,5 +1,9 @@
-import { getApiBaseUrl } from '@/lib/config';
-import type { GuildGroceryList, TokenResponse, UserGuildsResponse } from '@/lib/api/types';
+import { getApiBaseUrl } from '@/lib/config'
+import type {
+  GuildGroceryList,
+  TokenResponse,
+  UserGuildsResponse,
+} from '@/lib/api/types'
 import {
   shouldRetryHttpForGet,
   throwUnlessRetryableGet,
@@ -7,103 +11,109 @@ import {
   TransientHttpError,
   TRANSIENT_RETRY_ATTEMPTS,
   withTransientRetries,
-} from '@/lib/api/timedFetch';
+} from '@/lib/api/timedFetch'
 import {
   clearTokens,
   getAccessExpiresAt,
   getAccessToken,
   getRefreshToken,
   setTokens,
-} from '@/lib/storage/secureTokens';
+} from '@/lib/storage/secureTokens'
 
-let refreshPromise: Promise<string | null> | null = null;
+let refreshPromise: Promise<string | null> | null = null
 
 async function refreshAccessToken(): Promise<string | null> {
-  if (refreshPromise) return refreshPromise;
+  if (refreshPromise) return refreshPromise
 
   refreshPromise = (async () => {
     return withTransientRetries(TRANSIENT_RETRY_ATTEMPTS, async () => {
-      const refresh = await getRefreshToken();
-      if (!refresh) return null;
+      const refresh = await getRefreshToken()
+      if (!refresh) return null
 
       const res = await timedFetch(`${getApiBaseUrl()}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: refresh }),
-      });
+      })
 
       if (!res.ok) {
-        if (shouldRetryHttpForGet(res.status)) throw new TransientHttpError(res.status);
-        await clearTokens();
-        return null;
+        if (shouldRetryHttpForGet(res.status))
+          throw new TransientHttpError(res.status)
+        await clearTokens()
+        return null
       }
 
-      const data = (await res.json()) as TokenResponse;
-      await setTokens(data.access_token, data.refresh_token, data.expires_in);
-      return data.access_token;
-    });
-  })();
+      const data = (await res.json()) as TokenResponse
+      await setTokens(data.access_token, data.refresh_token, data.expires_in)
+      return data.access_token
+    })
+  })()
 
   try {
-    return await refreshPromise;
+    return await refreshPromise
   } finally {
-    refreshPromise = null;
+    refreshPromise = null
   }
 }
 
 async function getValidAccessToken(): Promise<string | null> {
-  const access = await getAccessToken();
-  const expiresAt = await getAccessExpiresAt();
+  const access = await getAccessToken()
+  const expiresAt = await getAccessExpiresAt()
   if (access && expiresAt && Date.now() < expiresAt) {
-    return access;
+    return access
   }
-  return refreshAccessToken();
+  return refreshAccessToken()
 }
 
 export async function fetchWithAuth(
   path: string,
   init: RequestInit & { guildId?: string } = {},
 ): Promise<Response> {
-  const { guildId, ...rest } = init;
-  const headers = new Headers(rest.headers);
+  const { guildId, ...rest } = init
+  const headers = new Headers(rest.headers)
 
-  const token = await getValidAccessToken();
+  const token = await getValidAccessToken()
   if (!token) {
-    return new Response(null, { status: 401 });
+    return new Response(null, { status: 401 })
   }
-  headers.set('Authorization', `Bearer ${token}`);
+  headers.set('Authorization', `Bearer ${token}`)
   if (guildId) {
-    headers.set('X-Guild-ID', guildId);
+    headers.set('X-Guild-ID', guildId)
   }
 
-  let res = await timedFetch(`${getApiBaseUrl()}${path}`, { ...rest, headers });
+  let res = await timedFetch(`${getApiBaseUrl()}${path}`, { ...rest, headers })
 
   if (res.status === 401) {
-    const next = await refreshAccessToken();
-    if (!next) return res;
-    const h2 = new Headers(rest.headers);
-    h2.set('Authorization', `Bearer ${next}`);
-    if (guildId) h2.set('X-Guild-ID', guildId);
-    res = await timedFetch(`${getApiBaseUrl()}${path}`, { ...rest, headers: h2 });
+    const next = await refreshAccessToken()
+    if (!next) return res
+    const h2 = new Headers(rest.headers)
+    h2.set('Authorization', `Bearer ${next}`)
+    if (guildId) h2.set('X-Guild-ID', guildId)
+    res = await timedFetch(`${getApiBaseUrl()}${path}`, {
+      ...rest,
+      headers: h2,
+    })
   }
 
-  return res;
+  return res
 }
 
 export async function getGuilds(): Promise<UserGuildsResponse> {
   return withTransientRetries(TRANSIENT_RETRY_ATTEMPTS, async () => {
-    const res = await fetchWithAuth('/guilds');
-    throwUnlessRetryableGet(res, 'GET /guilds failed');
-    return res.json() as Promise<UserGuildsResponse>;
-  });
+    const res = await fetchWithAuth('/guilds')
+    throwUnlessRetryableGet(res, 'GET /guilds failed')
+    return res.json() as Promise<UserGuildsResponse>
+  })
 }
 
-export async function getGroceryLists(guildId: string): Promise<GuildGroceryList> {
+export async function getGroceryLists(
+  guildId: string,
+): Promise<GuildGroceryList> {
   return withTransientRetries(TRANSIENT_RETRY_ATTEMPTS, async () => {
-    const res = await fetchWithAuth('/grocery-lists', { guildId });
-    throwUnlessRetryableGet(res, 'GET /grocery-lists failed');
-    return res.json() as Promise<GuildGroceryList>;
-  });
+    const res = await fetchWithAuth('/grocery-lists', { guildId })
+    throwUnlessRetryableGet(res, 'GET /grocery-lists failed')
+    return res.json() as Promise<GuildGroceryList>
+  })
 }
 
 export async function createGrocery(
@@ -115,64 +125,69 @@ export async function createGrocery(
     guildId,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  });
+  })
   if (!res.ok && res.status !== 201) {
-    const text = await res.text();
-    throw new Error(text || `POST /groceries failed: ${res.status}`);
+    const text = await res.text()
+    throw new Error(text || `POST /groceries failed: ${res.status}`)
   }
 }
 
-export async function deleteGrocery(guildId: string, id: number): Promise<void> {
+export async function deleteGrocery(
+  guildId: string,
+  id: number,
+): Promise<void> {
   await withTransientRetries(TRANSIENT_RETRY_ATTEMPTS, async () => {
     const res = await fetchWithAuth(`/groceries/${id}`, {
       method: 'DELETE',
       guildId,
-    });
-    if (res.ok) return;
-    if (shouldRetryHttpForGet(res.status)) throw new TransientHttpError(res.status);
-    throw new Error(`DELETE /groceries/${id} failed: ${res.status}`);
-  });
+    })
+    if (res.ok) return
+    if (shouldRetryHttpForGet(res.status))
+      throw new TransientHttpError(res.status)
+    throw new Error(`DELETE /groceries/${id} failed: ${res.status}`)
+  })
 }
 
 export async function logoutSession(): Promise<void> {
   await withTransientRetries(TRANSIENT_RETRY_ATTEMPTS, async () => {
-    const res = await fetchWithAuth('/auth/logout', { method: 'POST' });
-    if (res.status === 204 || res.status === 401) return;
-    await res.text().catch(() => {});
-    if (shouldRetryHttpForGet(res.status)) throw new TransientHttpError(res.status);
-  });
-  await clearTokens();
+    const res = await fetchWithAuth('/auth/logout', { method: 'POST' })
+    if (res.status === 204 || res.status === 401) return
+    await res.text().catch(() => {})
+    if (shouldRetryHttpForGet(res.status))
+      throw new TransientHttpError(res.status)
+  })
+  await clearTokens()
 }
 
 export async function exchangeAuthCode(body: {
-  code: string;
-  code_verifier: string;
-  redirect_uri: string;
+  code: string
+  code_verifier: string
+  redirect_uri: string
 }): Promise<TokenResponse> {
   const res = await timedFetch(`${getApiBaseUrl()}/auth/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  });
+  })
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || `Token exchange failed (${res.status})`);
+    const text = await res.text()
+    throw new Error(text || `Token exchange failed (${res.status})`)
   }
 
-  return res.json() as Promise<TokenResponse>;
+  return res.json() as Promise<TokenResponse>
 }
 
 /** Clears local tokens; calls POST /auth/logout when online. */
 export async function signOut(online: boolean): Promise<void> {
   if (online) {
     try {
-      await logoutSession();
-      return;
+      await logoutSession()
+      return
     } catch {
-      await clearTokens();
-      return;
+      await clearTokens()
+      return
     }
   }
-  await clearTokens();
+  await clearTokens()
 }

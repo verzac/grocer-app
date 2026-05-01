@@ -1,47 +1,55 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useEffect, useMemo, useState } from 'react'
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { Button } from '@/components/ui/Button';
-import { useTokenExchange } from '@/hooks/data/useTokenExchange';
-import { getDiscordOAuthRedirectUri } from '@/lib/config';
-import { clearPendingOAuth, getPendingOAuth, setTokens } from '@/lib/storage/secureTokens';
+import { Button } from '@/components/ui/Button'
+import { useTokenExchange } from '@/hooks/data/useTokenExchange'
+import { getDiscordOAuthRedirectUri } from '@/lib/config'
+import {
+  clearPendingOAuth,
+  getPendingOAuth,
+  setTokens,
+} from '@/lib/storage/secureTokens'
 
 export default function OAuthCallbackScreen() {
-  const router = useRouter();
-  const params = useLocalSearchParams<{ code?: string; state?: string; error?: string }>();
-  const redirectUri = useMemo(() => getDiscordOAuthRedirectUri(), []);
-  const [error, setError] = useState<string | null>(null);
-  const { trigger: exchangeToken } = useTokenExchange();
+  const router = useRouter()
+  const params = useLocalSearchParams<{
+    code?: string
+    state?: string
+    error?: string
+  }>()
+  const redirectUri = useMemo(() => getDiscordOAuthRedirectUri(), [])
+  const [error, setError] = useState<string | null>(null)
+  const { trigger: exchangeToken } = useTokenExchange()
 
   useEffect(() => {
     async function completeOAuth() {
-      const code = typeof params.code === 'string' ? params.code : null;
-      const state = typeof params.state === 'string' ? params.state : null;
-      const authError = typeof params.error === 'string' ? params.error : null;
+      const code = typeof params.code === 'string' ? params.code : null
+      const state = typeof params.state === 'string' ? params.state : null
+      const authError = typeof params.error === 'string' ? params.error : null
 
       if (authError) {
-        setError(`Discord error: ${authError}`);
-        await clearPendingOAuth();
-        return;
+        setError(`Discord error: ${authError}`)
+        await clearPendingOAuth()
+        return
       }
 
       if (!code) {
-        setError('Missing authorization code.');
-        return;
+        setError('Missing authorization code.')
+        return
       }
 
-      const pending = await getPendingOAuth();
+      const pending = await getPendingOAuth()
       if (!pending.codeVerifier || !pending.state) {
-        setError('Missing PKCE verifier. Please try login again.');
-        return;
+        setError('Missing PKCE verifier. Please try login again.')
+        return
       }
 
       if (state !== pending.state) {
-        await clearPendingOAuth();
-        setError('OAuth state mismatch. Please try login again.');
-        return;
+        await clearPendingOAuth()
+        setError('OAuth state mismatch. Please try login again.')
+        return
       }
 
       try {
@@ -49,23 +57,33 @@ export default function OAuthCallbackScreen() {
           code,
           codeVerifier: pending.codeVerifier,
           redirectUri,
-        });
-        await setTokens(data.access_token, data.refresh_token, data.expires_in);
-        await clearPendingOAuth();
-        console.log('###callback: token exchange ok');
-        router.dismissTo('/(app)');
+        })
+        await setTokens(data.access_token, data.refresh_token, data.expires_in)
+        await clearPendingOAuth()
+        console.log('###callback: token exchange ok')
+        router.dismissTo('/(app)')
       } catch (e) {
-        const msg = e instanceof Error ? e.message : 'Login failed';
-        setError(msg);
-        console.log('###callback error', msg);
+        const msg = e instanceof Error ? e.message : 'Login failed'
+        setError(msg)
+        console.log('###callback error', msg)
       }
     }
 
-    completeOAuth();
-  }, [exchangeToken, params.code, params.error, params.state, redirectUri, router]);
+    completeOAuth()
+  }, [
+    exchangeToken,
+    params.code,
+    params.error,
+    params.state,
+    redirectUri,
+    router,
+  ])
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom', 'left', 'right']}>
+    <SafeAreaView
+      style={styles.screen}
+      edges={['top', 'bottom', 'left', 'right']}
+    >
       <View style={styles.card}>
         {!error ? (
           <>
@@ -76,11 +94,13 @@ export default function OAuthCallbackScreen() {
           <>
             <Text style={styles.errTitle}>Sign-in failed</Text>
             <Text style={styles.errText}>{error}</Text>
-            <Text style={styles.hint}>Go back and tap Continue with Discord again.</Text>
+            <Text style={styles.hint}>
+              Go back and tap Continue with Discord again.
+            </Text>
             <Button
               title="Try login again"
               onPress={() => {
-                router.replace('/(auth)/login');
+                router.replace('/(auth)/login')
               }}
               style={styles.retryButton}
             />
@@ -88,7 +108,7 @@ export default function OAuthCallbackScreen() {
         )}
       </View>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -131,4 +151,4 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 4,
   },
-});
+})

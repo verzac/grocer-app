@@ -27,10 +27,10 @@ From the dev UI, press `i` / `a` / `w` for iOS, Android, or web. **OAuth deep li
 
 Expo reads public env vars at **build** time via `app.config.ts` (`process.env.EXPO_PUBLIC_*`).
 
-| Variable | Required | Purpose |
-|----------|----------|---------|
-| `EXPO_PUBLIC_API_BASE_URL` | No | Overrides the GroceryBot API base URL. Default: `https://api.grocerybot.net` (no trailing slash required; the app strips one if present). |
-| `EXPO_PUBLIC_DISCORD_CLIENT_ID` | No | **Not used for OAuth in the current app:** Discord **client ID**, **redirect URI**, and **scopes** are defined in `app.config.ts` `extra` and `lib/config.ts`. Change those files (or reintroduce env-based overrides) if you need a different Discord app or redirect without editing code. |
+| Variable                        | Required | Purpose                                                                                                                                                                                                                                                                                      |
+| ------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_API_BASE_URL`      | No       | Overrides the GroceryBot API base URL. Default: `https://api.grocerybot.net` (no trailing slash required; the app strips one if present).                                                                                                                                                    |
+| `EXPO_PUBLIC_DISCORD_CLIENT_ID` | No       | **Not used for OAuth in the current app:** Discord **client ID**, **redirect URI**, and **scopes** are defined in `app.config.ts` `extra` and `lib/config.ts`. Change those files (or reintroduce env-based overrides) if you need a different Discord app or redirect without editing code. |
 
 Example for a **staging API** (optional):
 
@@ -103,9 +103,9 @@ There is **no** Detox, Maestro, or Appium suite in this repository yet. To add a
 
 ## Quick command reference
 
-| Command | Purpose |
-|---------|---------|
-| `pnpm install` | Install dependencies |
-| `pnpm start` | Start Expo dev server |
-| `pnpm run typecheck` | TypeScript check |
+| Command                                              | Purpose                      |
+| ---------------------------------------------------- | ---------------------------- |
+| `pnpm install`                                       | Install dependencies         |
+| `pnpm start`                                         | Start Expo dev server        |
+| `pnpm run typecheck`                                 | TypeScript check             |
 | `pnpm run android` / `pnpm run ios` / `pnpm run web` | Start with platform shortcut |

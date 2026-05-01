@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack } from 'expo-router'
 
 export default function AppGroupLayout() {
   return (
@@ -14,5 +14,5 @@ export default function AppGroupLayout() {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="guilds" options={{ title: 'Servers' }} />
     </Stack>
-  );
+  )
 }

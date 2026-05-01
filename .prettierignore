@@ -1,0 +1,11 @@
+# Prettier 3 respects .gitignore by default alongside this file — see
+# https://prettier.io/docs/ignore
+# Do not duplicate .gitignore entries here.
+
+# Lockfiles are usually committed but should not be reformatted.
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Not listed in .gitignore; omit from formatting when present locally or in CI.
+coverage/

@@ -1,29 +1,33 @@
-import * as AuthSession from 'expo-auth-session';
-import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import * as AuthSession from 'expo-auth-session'
+import { useRouter } from 'expo-router'
+import { useEffect, useMemo, useState } from 'react'
+import { StyleSheet, Text, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { Button } from '@/components/ui/Button';
-import { useTokenExchange } from '@/hooks/data/useTokenExchange';
+import { Button } from '@/components/ui/Button'
+import { useTokenExchange } from '@/hooks/data/useTokenExchange'
 import {
   DISCORD_OAUTH_SCOPES,
   getDiscordClientId,
   getDiscordOAuthRedirectUri,
-} from '@/lib/config';
-import { clearPendingOAuth, setPendingOAuth, setTokens } from '@/lib/storage/secureTokens';
+} from '@/lib/config'
+import {
+  clearPendingOAuth,
+  setPendingOAuth,
+  setTokens,
+} from '@/lib/storage/secureTokens'
 
 export default function LoginScreen() {
-  const router = useRouter();
-  const clientId = getDiscordClientId();
-  const redirectUri = useMemo(() => getDiscordOAuthRedirectUri(), []);
+  const router = useRouter()
+  const clientId = getDiscordClientId()
+  const redirectUri = useMemo(() => getDiscordOAuthRedirectUri(), [])
 
   const discovery = useMemo(
     () => ({
       authorizationEndpoint: 'https://discord.com/api/oauth2/authorize',
     }),
     [],
-  );
+  )
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
@@ -33,51 +37,54 @@ export default function LoginScreen() {
       responseType: AuthSession.ResponseType.Code,
     },
     discovery,
-  );
+  )
 
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { trigger: exchangeToken, isMutating } = useTokenExchange();
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { trigger: exchangeToken, isMutating } = useTokenExchange()
 
   useEffect(() => {
     async function exchange() {
-      if (response?.type !== 'success' || !request) return;
-      const code = response.params.code;
+      if (response?.type !== 'success' || !request) return
+      const code = response.params.code
       if (!code) {
-        setError('No authorization code returned.');
-        return;
+        setError('No authorization code returned.')
+        return
       }
       if (!request.codeVerifier) {
-        setError('Missing PKCE verifier. Please try again.');
-        return;
+        setError('Missing PKCE verifier. Please try again.')
+        return
       }
 
-      setBusy(true);
-      setError(null);
+      setBusy(true)
+      setError(null)
       try {
         const data = await exchangeToken({
           code,
           codeVerifier: request.codeVerifier,
           redirectUri,
-        });
-        await setTokens(data.access_token, data.refresh_token, data.expires_in);
-        await clearPendingOAuth();
-        console.log('###login: token exchange ok');
-        router.dismissTo('/(app)');
+        })
+        await setTokens(data.access_token, data.refresh_token, data.expires_in)
+        await clearPendingOAuth()
+        console.log('###login: token exchange ok')
+        router.dismissTo('/(app)')
       } catch (e) {
-        const msg = e instanceof Error ? e.message : 'Login failed';
-        setError(msg);
-        console.log('###login error', msg);
+        const msg = e instanceof Error ? e.message : 'Login failed'
+        setError(msg)
+        console.log('###login error', msg)
       } finally {
-        setBusy(false);
+        setBusy(false)
       }
     }
 
-    exchange();
-  }, [exchangeToken, response, request, redirectUri, router]);
+    exchange()
+  }, [exchangeToken, response, request, redirectUri, router])
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom', 'left', 'right']}>
+    <SafeAreaView
+      style={styles.screen}
+      edges={['top', 'bottom', 'left', 'right']}
+    >
       <View style={styles.card}>
         <Text style={styles.title}>GroceryApp</Text>
         <Text style={styles.subtitle}>
@@ -91,28 +98,29 @@ export default function LoginScreen() {
           loading={busy || isMutating}
           disabled={!request}
           onPress={async () => {
-            setError(null);
+            setError(null)
             if (!request?.codeVerifier || !request.state) {
-              setError('OAuth request is not ready. Please try again.');
-              return;
+              setError('OAuth request is not ready. Please try again.')
+              return
             }
 
             try {
-              await setPendingOAuth(request.codeVerifier, request.state);
-              await promptAsync();
+              await setPendingOAuth(request.codeVerifier, request.state)
+              await promptAsync()
             } catch (e) {
-              setError(e instanceof Error ? e.message : 'OAuth failed');
+              setError(e instanceof Error ? e.message : 'OAuth failed')
             }
           }}
         />
 
         <Text style={styles.hint}>Redirect URI: {redirectUri}</Text>
         <Text style={styles.hintSmall}>
-          This must match Discord OAuth2 → Redirects and the API allowlist for token exchange.
+          This must match Discord OAuth2 → Redirects and the API allowlist for
+          token exchange.
         </Text>
       </View>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -154,4 +162,4 @@ const styles = StyleSheet.create({
     color: '#64748b',
     lineHeight: 16,
   },
-});
+})
