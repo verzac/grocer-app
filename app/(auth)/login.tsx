@@ -63,7 +63,7 @@ export default function LoginScreen() {
         await setTokens(data.access_token, data.refresh_token, data.expires_in);
         await clearPendingOAuth();
         console.log('###login: token exchange ok');
-        router.replace('/(app)');
+        router.dismissTo('/(app)');
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Login failed';
         setError(msg);

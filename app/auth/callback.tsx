@@ -53,7 +53,7 @@ export default function OAuthCallbackScreen() {
         await setTokens(data.access_token, data.refresh_token, data.expires_in);
         await clearPendingOAuth();
         console.log('###callback: token exchange ok');
-        router.replace('/(app)');
+        router.dismissTo('/(app)');
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Login failed';
         setError(msg);

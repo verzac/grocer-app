@@ -1,3 +1,4 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -18,6 +19,8 @@ import { createGrocery, deleteGrocery, getGroceryLists, getGuilds } from '@/lib/
 import type { GroceryEntry, GroceryList, GuildGroceryList, UserGuild } from '@/lib/api/types';
 import { loadGroceryListsCache, loadGuildsCache, saveGroceryListsCache, saveGuildsCache } from '@/lib/storage/offlineCache';
 import { getSelectedGuildId, setSelectedGuildId } from '@/lib/storage/guildSelection';
+
+type ListPillId = 'all' | 'default' | number;
 
 export default function GroceriesScreen() {
   const router = useRouter();
@@ -47,12 +50,11 @@ export default function GroceriesScreen() {
 
   const [selectedGuildId, setLocalGuildId] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const stored = await getSelectedGuildId();
-      setLocalGuildId(stored);
-    })();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      getSelectedGuildId().then(setLocalGuildId);
+    }, []),
+  );
 
   useEffect(() => {
     if (!guilds.length) return;
@@ -137,12 +139,15 @@ export default function GroceriesScreen() {
   }, [groceryData, listById]);
 
   const [newItem, setNewItem] = useState('');
-  const [listFilter, setListFilter] = useState<number | 'default' | null>(null);
+  const [listFilter, setListFilter] = useState<ListPillId>('all');
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const listOptions = useMemo(() => {
-    const opts: { id: number | 'default'; label: string }[] = [{ id: 'default', label: 'Default' }];
+    const opts: { id: ListPillId; label: string }[] = [
+      { id: 'all', label: 'All Lists' },
+      { id: 'default', label: 'Default' },
+    ];
     groceryData?.grocery_lists?.forEach((l) => {
       opts.push({
         id: l.id,
@@ -152,10 +157,16 @@ export default function GroceriesScreen() {
     return opts;
   }, [groceryData]);
 
-  useEffect(() => {
-    if (listFilter !== null) return;
-    setListFilter(listOptions[0]?.id ?? 'default');
-  }, [listFilter, listOptions]);
+  const visibleSections = useMemo(() => {
+    if (listFilter === 'all') return sections;
+    const wantKey = listFilter === 'default' ? 'default' : String(listFilter);
+    const filtered = sections.filter((s) => s.key === wantKey);
+    if (filtered.length > 0) return filtered;
+    if (listFilter === 'default') {
+      return [{ key: 'default', label: 'Default list', entries: [] as GroceryEntry[] }];
+    }
+    return filtered;
+  }, [sections, listFilter]);
 
   const onRefresh = useCallback(async () => {
     setActionError(null);
@@ -173,7 +184,7 @@ export default function GroceriesScreen() {
     setActionError(null);
     try {
       const grocery_list_id =
-        listFilter === 'default' || listFilter === null ? null : listFilter;
+        listFilter === 'default' || listFilter === 'all' ? null : listFilter;
       await createGrocery(effectiveGuildId, { item_desc: desc, grocery_list_id });
       setNewItem('');
       await mutateGroceries();
@@ -272,7 +283,7 @@ export default function GroceriesScreen() {
       </View>
 
       <FlatList
-        data={sections}
+        data={visibleSections}
         keyExtractor={(s) => s.key}
         refreshControl={
           <RefreshControl

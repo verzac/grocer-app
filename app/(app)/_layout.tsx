@@ -11,7 +11,10 @@ export default function AppGroupLayout() {
         headerShadowVisible: false,
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'Groceries' }} />
+      <Stack.Screen
+        name="index"
+        options={{ title: 'Groceries', headerBackVisible: false }}
+      />
       <Stack.Screen name="guilds" options={{ title: 'Servers' }} />
     </Stack>
   );
