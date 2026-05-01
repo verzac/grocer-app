@@ -4,6 +4,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import useSWR from 'swr'
 
+import { GuildAvatar } from '@/components/GuildAvatar'
 import { Button } from '@/components/ui/Button'
 import { useOnline } from '@/hooks/useOnline'
 import { getGuilds, signOut } from '@/lib/api/client'
@@ -69,7 +70,7 @@ export default function GuildsScreen() {
             {isLoading && online ? 'Loading…' : 'No servers found.'}
           </Text>
         }
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const active = item.id === currentId
           return (
             <Pressable
@@ -77,6 +78,7 @@ export default function GuildsScreen() {
               style={[styles.row, active && styles.rowOn]}
               accessibilityRole="button"
             >
+              <GuildAvatar guild={item} orderIndex={index} size={44} />
               <Text style={styles.name}>{item.name}</Text>
               {active && <Text style={styles.badge}>Selected</Text>}
             </Pressable>
@@ -132,7 +134,7 @@ const styles = StyleSheet.create({
     borderColor: '#334155',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
   },
   rowOn: {
     borderColor: '#16a34a',
@@ -143,6 +145,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     flex: 1,
+    minWidth: 0,
   },
   badge: {
     color: '#bbf7d0',

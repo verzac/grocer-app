@@ -1,9 +1,17 @@
 import type { ExpoConfig } from 'expo/config'
 
+const EAS_PROJECT_ID = '16bf991e-d6e0-45c7-b22a-c2630c2052be'
+
 const config: ExpoConfig = {
   name: 'GroceryApp',
   slug: 'grocery-app',
   version: '1.0.0',
+  runtimeVersion: {
+    policy: 'appVersion',
+  },
+  updates: {
+    url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
+  },
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
@@ -47,6 +55,7 @@ const config: ExpoConfig = {
     'expo-router',
     'expo-secure-store',
     '@react-native-async-storage/expo-with-async-storage',
+    'expo-updates',
   ],
   experiments: {
     typedRoutes: true,
@@ -57,7 +66,7 @@ const config: ExpoConfig = {
     discordClientId: '815120759680532510',
     oauthRedirectUri: 'groceryapp://auth/callback',
     eas: {
-      projectId: '16bf991e-d6e0-45c7-b22a-c2630c2052be',
+      projectId: EAS_PROJECT_ID,
     },
   },
 }

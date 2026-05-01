@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import useSWR from 'swr'
 
+import { GuildAvatar } from '@/components/GuildAvatar'
 import { Button } from '@/components/ui/Button'
 import { useOnline } from '@/hooks/useOnline'
 import {
@@ -255,8 +256,22 @@ export default function GroceriesScreen() {
     }
   }
 
-  const guildLabel =
-    guilds.find((g) => g.id === effectiveGuildId)?.name ?? 'Select server'
+  const selectedGuild =
+    effectiveGuildId != null
+      ? guilds.find((g) => g.id === effectiveGuildId)
+      : undefined
+
+  const guildLabel = selectedGuild?.name ?? 'Select server'
+
+  const chipGuild: UserGuild = selectedGuild ?? {
+    id: '__none__',
+    name: guildLabel,
+    icon: null,
+  }
+
+  const chipOrderIndex = selectedGuild
+    ? Math.max(0, guilds.findIndex((g) => g.id === effectiveGuildId))
+    : 0
 
   return (
     <SafeAreaView
@@ -269,10 +284,19 @@ export default function GroceriesScreen() {
           style={styles.guildChip}
           accessibilityRole="button"
         >
-          <Text style={styles.guildChipText} numberOfLines={1}>
-            {guildLabel}
-          </Text>
-          <Text style={styles.guildChipHint}>Change</Text>
+          <View style={styles.guildChipRow}>
+            <GuildAvatar
+              guild={chipGuild}
+              orderIndex={chipOrderIndex}
+              size={40}
+            />
+            <View style={styles.guildChipTextCol}>
+              <Text style={styles.guildChipText} numberOfLines={1}>
+                {guildLabel}
+              </Text>
+              <Text style={styles.guildChipHint}>Change</Text>
+            </View>
+          </View>
         </Pressable>
       </View>
 
@@ -420,6 +444,15 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: '#334155',
+  },
+  guildChipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  guildChipTextCol: {
+    flex: 1,
+    minWidth: 0,
   },
   guildChipText: {
     color: '#f8fafc',
