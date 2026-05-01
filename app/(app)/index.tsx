@@ -1,6 +1,6 @@
-import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native'
+import { useRouter } from 'expo-router'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   FlatList,
   Pressable,
@@ -9,30 +9,48 @@ import {
   Text,
   TextInput,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import useSWR from 'swr';
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import useSWR from 'swr'
 
-import { Button } from '@/components/ui/Button';
-import { useOnline } from '@/hooks/useOnline';
-import { createGrocery, deleteGrocery, getGroceryLists, getGuilds } from '@/lib/api/client';
-import type { GroceryEntry, GroceryList, GuildGroceryList, UserGuild } from '@/lib/api/types';
-import { loadGroceryListsCache, loadGuildsCache, saveGroceryListsCache, saveGuildsCache } from '@/lib/storage/offlineCache';
-import { getSelectedGuildId, setSelectedGuildId } from '@/lib/storage/guildSelection';
+import { Button } from '@/components/ui/Button'
+import { useOnline } from '@/hooks/useOnline'
+import {
+  createGrocery,
+  deleteGrocery,
+  getGroceryLists,
+  getGuilds,
+} from '@/lib/api/client'
+import type {
+  GroceryEntry,
+  GroceryList,
+  GuildGroceryList,
+  UserGuild,
+} from '@/lib/api/types'
+import {
+  loadGroceryListsCache,
+  loadGuildsCache,
+  saveGroceryListsCache,
+  saveGuildsCache,
+} from '@/lib/storage/offlineCache'
+import {
+  getSelectedGuildId,
+  setSelectedGuildId,
+} from '@/lib/storage/guildSelection'
 
-type ListPillId = 'all' | 'default' | number;
+type ListPillId = 'all' | 'default' | number
 
 export default function GroceriesScreen() {
-  const router = useRouter();
-  const online = useOnline();
+  const router = useRouter()
+  const online = useOnline()
 
-  const [cachedGuilds, setCachedGuilds] = useState<UserGuild[]>([]);
+  const [cachedGuilds, setCachedGuilds] = useState<UserGuild[]>([])
 
   useEffect(() => {
     loadGuildsCache().then((g) => {
-      if (g?.length) setCachedGuilds(g);
-    });
-  }, []);
+      if (g?.length) setCachedGuilds(g)
+    })
+  }, [])
 
   const {
     data: guildsData,
@@ -42,34 +60,35 @@ export default function GroceriesScreen() {
   } = useSWR(online ? 'guilds' : null, getGuilds, {
     revalidateOnFocus: true,
     onSuccess: (data) => {
-      saveGuildsCache(data.guilds).catch(() => {});
+      saveGuildsCache(data.guilds).catch(() => {})
     },
-  });
+  })
 
-  const guilds = guildsData?.guilds ?? cachedGuilds;
+  const guilds = guildsData?.guilds ?? cachedGuilds
 
-  const [selectedGuildId, setLocalGuildId] = useState<string | null>(null);
+  const [selectedGuildId, setLocalGuildId] = useState<string | null>(null)
 
   useFocusEffect(
     useCallback(() => {
-      getSelectedGuildId().then(setLocalGuildId);
+      getSelectedGuildId().then(setLocalGuildId)
     }, []),
-  );
+  )
 
   useEffect(() => {
-    if (!guilds.length) return;
-    const first = guilds[0].id;
+    if (!guilds.length) return
+    const first = guilds[0].id
     if (!selectedGuildId || !guilds.some((g) => g.id === selectedGuildId)) {
-      setLocalGuildId(first);
-      setSelectedGuildId(first).catch(() => {});
+      setLocalGuildId(first)
+      setSelectedGuildId(first).catch(() => {})
     }
-  }, [guilds, selectedGuildId]);
+  }, [guilds, selectedGuildId])
 
-  const effectiveGuildId = selectedGuildId ?? guilds[0]?.id ?? null;
-  const effectiveGuildIdRef = useRef(effectiveGuildId);
-  effectiveGuildIdRef.current = effectiveGuildId;
+  const effectiveGuildId = selectedGuildId ?? guilds[0]?.id ?? null
+  const effectiveGuildIdRef = useRef(effectiveGuildId)
+  effectiveGuildIdRef.current = effectiveGuildId
 
-  const groceryKey = online && effectiveGuildId ? ['grocery-lists', effectiveGuildId] : null;
+  const groceryKey =
+    online && effectiveGuildId ? ['grocery-lists', effectiveGuildId] : null
 
   const {
     data: groceryRemote,
@@ -79,147 +98,171 @@ export default function GroceriesScreen() {
   } = useSWR(groceryKey, () => getGroceryLists(effectiveGuildId!), {
     revalidateOnFocus: true,
     onSuccess: async (data, key) => {
-      if (!Array.isArray(key) || key[0] !== 'grocery-lists' || typeof key[1] !== 'string') return;
-      const gid = key[1];
+      if (
+        !Array.isArray(key) ||
+        key[0] !== 'grocery-lists' ||
+        typeof key[1] !== 'string'
+      )
+        return
+      const gid = key[1]
       try {
-        await saveGroceryListsCache(gid, data);
+        await saveGroceryListsCache(gid, data)
       } catch {
         /* ignore persist errors */
       }
       if (gid === effectiveGuildIdRef.current) {
-        setOfflineGroceries(data);
+        setOfflineGroceries(data)
       }
     },
-  });
+  })
 
-  const [offlineGroceries, setOfflineGroceries] = useState<GuildGroceryList | null>(null);
+  const [offlineGroceries, setOfflineGroceries] =
+    useState<GuildGroceryList | null>(null)
 
   useEffect(() => {
     if (!effectiveGuildId) {
-      setOfflineGroceries(null);
-      return;
+      setOfflineGroceries(null)
+      return
     }
-    if (online) return;
-    loadGroceryListsCache(effectiveGuildId).then(setOfflineGroceries);
-  }, [effectiveGuildId, online]);
+    if (online) return
+    loadGroceryListsCache(effectiveGuildId).then(setOfflineGroceries)
+  }, [effectiveGuildId, online])
 
-  const groceryData: GuildGroceryList | null | undefined = online ? groceryRemote : offlineGroceries ?? groceryRemote;
+  const groceryData: GuildGroceryList | null | undefined = online
+    ? groceryRemote
+    : (offlineGroceries ?? groceryRemote)
 
   const listById = useMemo(() => {
-    const m = new Map<number, GroceryList>();
-    groceryData?.grocery_lists?.forEach((l) => m.set(l.id, l));
-    return m;
-  }, [groceryData]);
+    const m = new Map<number, GroceryList>()
+    groceryData?.grocery_lists?.forEach((l) => m.set(l.id, l))
+    return m
+  }, [groceryData])
 
   const sections = useMemo(() => {
-    const entries = groceryData?.grocery_entries ?? [];
-    const byList = new Map<string | number, GroceryEntry[]>();
+    const entries = groceryData?.grocery_entries ?? []
+    const byList = new Map<string | number, GroceryEntry[]>()
     for (const e of entries) {
-      const key = e.grocery_list_id ?? 'default';
-      const arr = byList.get(key) ?? [];
-      arr.push(e);
-      byList.set(key, arr);
+      const key = e.grocery_list_id ?? 'default'
+      const arr = byList.get(key) ?? []
+      arr.push(e)
+      byList.set(key, arr)
     }
-    const order: (string | number)[] = [];
-    if (byList.has('default')) order.push('default');
-    groceryData?.grocery_lists?.forEach((l) => order.push(l.id));
+    const order: (string | number)[] = []
+    if (byList.has('default')) order.push('default')
+    groceryData?.grocery_lists?.forEach((l) => order.push(l.id))
     for (const k of byList.keys()) {
-      if (!order.includes(k)) order.push(k);
+      if (!order.includes(k)) order.push(k)
     }
     return order.map((k) => ({
       key: String(k),
       label:
         k === 'default'
           ? 'Default list'
-          : listById.get(k as number)?.fancy_name ??
+          : (listById.get(k as number)?.fancy_name ??
             listById.get(k as number)?.list_label ??
-            `List ${k}`,
+            `List ${k}`),
       entries: byList.get(k) ?? [],
-    }));
-  }, [groceryData, listById]);
+    }))
+  }, [groceryData, listById])
 
-  const [newItem, setNewItem] = useState('');
-  const [listFilter, setListFilter] = useState<ListPillId>('all');
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [newItem, setNewItem] = useState('')
+  const [listFilter, setListFilter] = useState<ListPillId>('all')
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
   const listOptions = useMemo(() => {
     const opts: { id: ListPillId; label: string }[] = [
       { id: 'all', label: 'All Lists' },
       { id: 'default', label: 'Default' },
-    ];
+    ]
     groceryData?.grocery_lists?.forEach((l) => {
       opts.push({
         id: l.id,
-        label: l.fancy_name ? `${l.fancy_name} (${l.list_label})` : l.list_label,
-      });
-    });
-    return opts;
-  }, [groceryData]);
+        label: l.fancy_name
+          ? `${l.fancy_name} (${l.list_label})`
+          : l.list_label,
+      })
+    })
+    return opts
+  }, [groceryData])
 
   const visibleSections = useMemo(() => {
-    if (listFilter === 'all') return sections;
-    const wantKey = listFilter === 'default' ? 'default' : String(listFilter);
-    const filtered = sections.filter((s) => s.key === wantKey);
-    if (filtered.length > 0) return filtered;
+    if (listFilter === 'all') return sections
+    const wantKey = listFilter === 'default' ? 'default' : String(listFilter)
+    const filtered = sections.filter((s) => s.key === wantKey)
+    if (filtered.length > 0) return filtered
     if (listFilter === 'default') {
-      return [{ key: 'default', label: 'Default list', entries: [] as GroceryEntry[] }];
+      return [
+        {
+          key: 'default',
+          label: 'Default list',
+          entries: [] as GroceryEntry[],
+        },
+      ]
     }
-    return filtered;
-  }, [sections, listFilter]);
+    return filtered
+  }, [sections, listFilter])
 
   const onRefresh = useCallback(async () => {
-    setActionError(null);
-    await Promise.all([mutateGuilds(), mutateGroceries()]);
-  }, [mutateGuilds, mutateGroceries]);
+    setActionError(null)
+    await Promise.all([mutateGuilds(), mutateGroceries()])
+  }, [mutateGuilds, mutateGroceries])
 
   const onAdd = async () => {
-    const desc = newItem.trim();
-    if (!desc || !effectiveGuildId) return;
+    const desc = newItem.trim()
+    if (!desc || !effectiveGuildId) return
     if (!online) {
-      setActionError('You need a connection to add items. Viewing still works offline.');
-      return;
+      setActionError(
+        'You need a connection to add items. Viewing still works offline.',
+      )
+      return
     }
-    setBusy(true);
-    setActionError(null);
+    setBusy(true)
+    setActionError(null)
     try {
       const grocery_list_id =
-        listFilter === 'default' || listFilter === 'all' ? null : listFilter;
-      await createGrocery(effectiveGuildId, { item_desc: desc, grocery_list_id });
-      setNewItem('');
-      await mutateGroceries();
-      console.log('###grocery: created');
+        listFilter === 'default' || listFilter === 'all' ? null : listFilter
+      await createGrocery(effectiveGuildId, {
+        item_desc: desc,
+        grocery_list_id,
+      })
+      setNewItem('')
+      await mutateGroceries()
+      console.log('###grocery: created')
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Could not add item');
+      setActionError(e instanceof Error ? e.message : 'Could not add item')
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
-  };
+  }
 
   const onDelete = async (id: number) => {
-    if (!effectiveGuildId) return;
+    if (!effectiveGuildId) return
     if (!online) {
-      setActionError('You need a connection to delete items.');
-      return;
+      setActionError('You need a connection to delete items.')
+      return
     }
-    setBusy(true);
-    setActionError(null);
+    setBusy(true)
+    setActionError(null)
     try {
-      await deleteGrocery(effectiveGuildId, id);
-      await mutateGroceries();
-      console.log('###grocery: deleted', id);
+      await deleteGrocery(effectiveGuildId, id)
+      await mutateGroceries()
+      console.log('###grocery: deleted', id)
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Could not delete');
+      setActionError(e instanceof Error ? e.message : 'Could not delete')
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
-  };
+  }
 
   const guildLabel =
-    guilds.find((g) => g.id === effectiveGuildId)?.name ?? 'Select server';
+    guilds.find((g) => g.id === effectiveGuildId)?.name ?? 'Select server'
 
   return (
-    <SafeAreaView style={styles.screen} edges={['bottom', 'left', 'right']}>
+    <SafeAreaView
+      style={styles.screen}
+      edges={['top', 'bottom', 'left', 'right']}
+    >
       <View style={styles.topBar}>
         <Pressable
           onPress={() => router.push('/(app)/guilds')}
@@ -241,89 +284,117 @@ export default function GroceriesScreen() {
         </View>
       )}
 
-      {guildsError && online && <Text style={styles.warn}>{String(guildsError)}</Text>}
-      {groceryError && online && <Text style={styles.warn}>{String(groceryError)}</Text>}
+      {guildsError && online && (
+        <Text style={styles.warn}>{String(guildsError)}</Text>
+      )}
+      {groceryError && online && (
+        <Text style={styles.warn}>{String(groceryError)}</Text>
+      )}
 
       {actionError && <Text style={styles.err}>{actionError}</Text>}
 
-      <View style={styles.addRow}>
-        <TextInput
-          style={styles.input}
-          placeholder="Add an item…"
-          placeholderTextColor="#64748b"
-          value={newItem}
-          onChangeText={setNewItem}
-          editable={!busy}
-          onSubmitEditing={onAdd}
-        />
-        <Button title="Add" loading={busy} disabled={!newItem.trim()} onPress={onAdd} />
-      </View>
-
-      <View style={styles.listPick}>
-        <Text style={styles.listPickLabel}>List</Text>
-        <FlatList
-          horizontal
-          data={listOptions}
-          keyExtractor={(item) => String(item.id)}
-          showsHorizontalScrollIndicator={false}
-          renderItem={({ item }) => {
-            const selected = listFilter === item.id;
-            return (
-              <Pressable
-                onPress={() => setListFilter(item.id)}
-                style={[styles.listPill, selected && styles.listPillOn]}
-              >
-                <Text style={[styles.listPillText, selected && styles.listPillTextOn]}>
-                  {item.label}
-                </Text>
-              </Pressable>
-            );
-          }}
-        />
-      </View>
-
-      <FlatList
-        data={visibleSections}
-        keyExtractor={(s) => s.key}
-        refreshControl={
-          <RefreshControl
-            refreshing={(guildsLoading || groceryLoading) && online}
-            onRefresh={onRefresh}
-          />
-        }
-        ListEmptyComponent={
-          <Text style={styles.empty}>
-            {groceryLoading && online
-              ? 'Loading…'
-              : 'No groceries yet. Add something when you are online.'}
-          </Text>
-        }
-        renderItem={({ item: section }) => (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{section.label}</Text>
-            {section.entries.length === 0 ? (
-              <Text style={styles.muted}>No items in this list.</Text>
-            ) : (
-              section.entries.map((entry) => (
-                <View key={entry.id} style={styles.row}>
-                  <Text style={styles.itemText}>{entry.item_desc}</Text>
-                  <Pressable
-                    onPress={() => onDelete(entry.id)}
-                    disabled={busy || !online}
-                    style={styles.deleteHit}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Delete ${entry.item_desc}`}
+      <View style={styles.mainColumn}>
+        <View style={styles.listPick}>
+          <Text style={styles.listPickLabel}>List</Text>
+          <FlatList
+            horizontal
+            data={listOptions}
+            keyExtractor={(item) => String(item.id)}
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item }) => {
+              const selected = listFilter === item.id
+              return (
+                <Pressable
+                  onPress={() => setListFilter(item.id)}
+                  style={[styles.listPill, selected && styles.listPillOn]}
+                >
+                  <Text
+                    style={[
+                      styles.listPillText,
+                      selected && styles.listPillTextOn,
+                    ]}
                   >
-                    <Text style={[styles.delete, !online && styles.deleteDisabled]}>Remove</Text>
-                  </Pressable>
-                </View>
-              ))
-            )}
-          </View>
-        )}
-      />
+                    {item.label}
+                  </Text>
+                </Pressable>
+              )
+            }}
+          />
+        </View>
+
+        <FlatList
+          style={styles.groceryFlatList}
+          data={visibleSections}
+          keyExtractor={(s) => s.key}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl
+              refreshing={(guildsLoading || groceryLoading) && online}
+              onRefresh={onRefresh}
+            />
+          }
+          contentContainerStyle={styles.groceryFlatListContent}
+          ListEmptyComponent={
+            <Text style={styles.empty}>
+              {groceryLoading && online
+                ? 'Loading…'
+                : 'No groceries yet. Add something when you are online.'}
+            </Text>
+          }
+          renderItem={({ item: section }) => (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{section.label}</Text>
+              {section.entries.length === 0 ? (
+                <Text style={styles.muted}>No items in this list.</Text>
+              ) : (
+                section.entries.map((entry) => (
+                  <View key={entry.id} style={styles.row}>
+                    <Text style={styles.itemText}>{entry.item_desc}</Text>
+                    <Pressable
+                      onPress={() => onDelete(entry.id)}
+                      disabled={busy || !online}
+                      style={styles.deleteHit}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Delete ${entry.item_desc}`}
+                    >
+                      <Text
+                        style={[
+                          styles.delete,
+                          !online && styles.deleteDisabled,
+                        ]}
+                      >
+                        Remove
+                      </Text>
+                    </Pressable>
+                  </View>
+                ))
+              )}
+            </View>
+          )}
+        />
+      </View>
+
+      <View style={styles.composerBar}>
+        <View style={styles.addRow}>
+          <TextInput
+            style={styles.input}
+            placeholder="Add an item…"
+            placeholderTextColor="#64748b"
+            value={newItem}
+            onChangeText={setNewItem}
+            editable={!busy}
+            onSubmitEditing={onAdd}
+          />
+          <Button
+            title="Add"
+            loading={busy}
+            disabled={!newItem.trim()}
+            onPress={onAdd}
+          />
+        </View>
+      </View>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -332,6 +403,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#0f172a',
     paddingHorizontal: 16,
     paddingTop: 8,
+  },
+  mainColumn: {
+    flex: 1,
+    minHeight: 0,
   },
   topBar: {
     flexDirection: 'row',
@@ -376,11 +451,26 @@ const styles = StyleSheet.create({
     color: '#fecaca',
     marginBottom: 8,
   },
+  composerBar: {
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+    backgroundColor: '#0f172a',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#334155',
+  },
   addRow: {
     flexDirection: 'row',
     gap: 10,
     alignItems: 'center',
-    marginBottom: 12,
+  },
+  groceryFlatList: {
+    flex: 1,
+  },
+  groceryFlatListContent: {
+    flexGrow: 1,
+    paddingBottom: 12,
   },
   input: {
     flex: 1,
@@ -464,4 +554,4 @@ const styles = StyleSheet.create({
     marginTop: 40,
     fontSize: 15,
   },
-});
+})

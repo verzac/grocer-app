@@ -13,7 +13,11 @@
     "eas:build:production": "eas build --profile production --platform all",
     "eas:submit:ios": "eas submit --platform ios --profile production",
     "eas:submit:android": "eas submit --platform android --profile production",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "format:paths": "prettier --write",
+    "format:check:paths": "prettier --check"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
@@ -37,6 +41,7 @@
     "@react-native-async-storage/expo-with-async-storage": "^1.0.0",
     "@types/react": "~19.2.14",
     "babel-preset-expo": "^55.0.17",
+    "prettier": "^3.8.3",
     "typescript": "~5.9.2"
   },
   "private": true,
