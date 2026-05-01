@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -64,6 +64,8 @@ export default function GroceriesScreen() {
   }, [guilds, selectedGuildId]);
 
   const effectiveGuildId = selectedGuildId ?? guilds[0]?.id ?? null;
+  const effectiveGuildIdRef = useRef(effectiveGuildId);
+  effectiveGuildIdRef.current = effectiveGuildId;
 
   const groceryKey = online && effectiveGuildId ? ['grocery-lists', effectiveGuildId] : null;
 
@@ -74,9 +76,16 @@ export default function GroceriesScreen() {
     isLoading: groceryLoading,
   } = useSWR(groceryKey, () => getGroceryLists(effectiveGuildId!), {
     revalidateOnFocus: true,
-    onSuccess: (data) => {
-      if (effectiveGuildId) {
-        saveGroceryListsCache(effectiveGuildId, data).catch(() => {});
+    onSuccess: async (data, key) => {
+      if (!Array.isArray(key) || key[0] !== 'grocery-lists' || typeof key[1] !== 'string') return;
+      const gid = key[1];
+      try {
+        await saveGroceryListsCache(gid, data);
+      } catch {
+        /* ignore persist errors */
+      }
+      if (gid === effectiveGuildIdRef.current) {
+        setOfflineGroceries(data);
       }
     },
   });
@@ -88,8 +97,9 @@ export default function GroceriesScreen() {
       setOfflineGroceries(null);
       return;
     }
+    if (online) return;
     loadGroceryListsCache(effectiveGuildId).then(setOfflineGroceries);
-  }, [effectiveGuildId]);
+  }, [effectiveGuildId, online]);
 
   const groceryData: GuildGroceryList | null | undefined = online ? groceryRemote : offlineGroceries ?? groceryRemote;
 
