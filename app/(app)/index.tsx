@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import useSWR from 'swr'
 
 import { GuildAvatar } from '@/components/GuildAvatar'
+import { formatRelativeAgo } from '@/lib/formatRelativeAgo'
 import { Button } from '@/components/ui/Button'
 import { useOnline } from '@/hooks/useOnline'
 import {
@@ -30,6 +31,7 @@ import type {
 } from '@/lib/api/types'
 import {
   loadGroceryListsCache,
+  loadGroceryListsFetchedAt,
   loadGuildsCache,
   saveGroceryListsCache,
   saveGuildsCache,
@@ -88,6 +90,33 @@ export default function GroceriesScreen() {
   const effectiveGuildIdRef = useRef(effectiveGuildId)
   effectiveGuildIdRef.current = effectiveGuildId
 
+  const persistGroceriesGen = useRef(0)
+  const [lastGroceryRefreshAtMs, setLastGroceryRefreshAtMs] = useState<
+    number | null
+  >(null)
+  const [relativeNowTick, setRelativeNowTick] = useState(0)
+
+  useEffect(() => {
+    const id = setInterval(() => setRelativeNowTick((x) => x + 1), 60_000)
+    return () => clearInterval(id)
+  }, [])
+
+  /** Offline: restore “last refreshed” from storage. SWR 2 does not invoke onSuccess. */
+  useEffect(() => {
+    if (!effectiveGuildId) {
+      setLastGroceryRefreshAtMs(null)
+      return
+    }
+    if (online) return
+    let cancelled = false
+    loadGroceryListsFetchedAt(effectiveGuildId).then((t) => {
+      if (!cancelled) setLastGroceryRefreshAtMs(t)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [effectiveGuildId, online])
+
   const groceryKey =
     online && effectiveGuildId ? ['grocery-lists', effectiveGuildId] : null
 
@@ -98,27 +127,29 @@ export default function GroceriesScreen() {
     isLoading: groceryLoading,
   } = useSWR(groceryKey, () => getGroceryLists(effectiveGuildId!), {
     revalidateOnFocus: true,
-    onSuccess: async (data, key) => {
-      if (
-        !Array.isArray(key) ||
-        key[0] !== 'grocery-lists' ||
-        typeof key[1] !== 'string'
-      )
-        return
-      const gid = key[1]
-      try {
-        await saveGroceryListsCache(gid, data)
-      } catch {
-        /* ignore persist errors */
-      }
-      if (gid === effectiveGuildIdRef.current) {
-        setOfflineGroceries(data)
-      }
-    },
   })
 
   const [offlineGroceries, setOfflineGroceries] =
     useState<GuildGroceryList | null>(null)
+
+  useEffect(() => {
+    if (!online || !effectiveGuildId || groceryRemote == null) return
+    const gid = effectiveGuildId
+    persistGroceriesGen.current += 1
+    const gen = persistGroceriesGen.current
+    const fetchedAtMs = Date.now()
+    ;(async () => {
+      try {
+        await saveGroceryListsCache(gid, groceryRemote, fetchedAtMs)
+      } catch {
+        /* ignore persist errors */
+      }
+      if (gen !== persistGroceriesGen.current) return
+      if (gid !== effectiveGuildIdRef.current) return
+      setLastGroceryRefreshAtMs(fetchedAtMs)
+      setOfflineGroceries(groceryRemote)
+    })()
+  }, [online, effectiveGuildId, groceryRemote])
 
   useEffect(() => {
     if (!effectiveGuildId) {
@@ -187,12 +218,35 @@ export default function GroceriesScreen() {
     return opts
   }, [groceryData])
 
+  /** No payload yet during first online fetch; avoid All/Default-only pills until data arrives. */
+  const groceriesLoadingEmptyOnline =
+    online && groceryLoading && groceryData == null
+
+  const showGroceryListFilterPills =
+    !groceriesLoadingEmptyOnline &&
+    (groceryData == null || (groceryData.grocery_lists?.length ?? 0) > 0)
+
+  const effectiveListFilter: ListPillId = showGroceryListFilterPills
+    ? listFilter
+    : 'all'
+
+  const groceryListHeader = useMemo(() => {
+    if (lastGroceryRefreshAtMs == null) return null
+    const ago = formatRelativeAgo(lastGroceryRefreshAtMs, Date.now())
+    return (
+      <Text style={styles.lastRefreshed}>
+        Last refreshed {ago}
+      </Text>
+    )
+  }, [lastGroceryRefreshAtMs, relativeNowTick])
+
   const visibleSections = useMemo(() => {
-    if (listFilter === 'all') return sections
-    const wantKey = listFilter === 'default' ? 'default' : String(listFilter)
+    if (effectiveListFilter === 'all') return sections
+    const wantKey =
+      effectiveListFilter === 'default' ? 'default' : String(effectiveListFilter)
     const filtered = sections.filter((s) => s.key === wantKey)
     if (filtered.length > 0) return filtered
-    if (listFilter === 'default') {
+    if (effectiveListFilter === 'default') {
       return [
         {
           key: 'default',
@@ -202,7 +256,7 @@ export default function GroceriesScreen() {
       ]
     }
     return filtered
-  }, [sections, listFilter])
+  }, [sections, effectiveListFilter])
 
   const onRefresh = useCallback(async () => {
     setActionError(null)
@@ -222,7 +276,9 @@ export default function GroceriesScreen() {
     setActionError(null)
     try {
       const grocery_list_id =
-        listFilter === 'default' || listFilter === 'all' ? null : listFilter
+        effectiveListFilter === 'default' || effectiveListFilter === 'all'
+          ? null
+          : effectiveListFilter
       await createGrocery(effectiveGuildId, {
         item_desc: desc,
         grocery_list_id,
@@ -318,33 +374,35 @@ export default function GroceriesScreen() {
       {actionError && <Text style={styles.err}>{actionError}</Text>}
 
       <View style={styles.mainColumn}>
-        <View style={styles.listPick}>
-          <Text style={styles.listPickLabel}>List</Text>
-          <FlatList
-            horizontal
-            data={listOptions}
-            keyExtractor={(item) => String(item.id)}
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => {
-              const selected = listFilter === item.id
-              return (
-                <Pressable
-                  onPress={() => setListFilter(item.id)}
-                  style={[styles.listPill, selected && styles.listPillOn]}
-                >
-                  <Text
-                    style={[
-                      styles.listPillText,
-                      selected && styles.listPillTextOn,
-                    ]}
+        {showGroceryListFilterPills && (
+          <View style={styles.listPick}>
+            <Text style={styles.listPickLabel}>List</Text>
+            <FlatList
+              horizontal
+              data={listOptions}
+              keyExtractor={(item) => String(item.id)}
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => {
+                const selected = listFilter === item.id
+                return (
+                  <Pressable
+                    onPress={() => setListFilter(item.id)}
+                    style={[styles.listPill, selected && styles.listPillOn]}
                   >
-                    {item.label}
-                  </Text>
-                </Pressable>
-              )
-            }}
-          />
-        </View>
+                    <Text
+                      style={[
+                        styles.listPillText,
+                        selected && styles.listPillTextOn,
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </Pressable>
+                )
+              }}
+            />
+          </View>
+        )}
 
         <FlatList
           style={styles.groceryFlatList}
@@ -358,6 +416,7 @@ export default function GroceriesScreen() {
             />
           }
           contentContainerStyle={styles.groceryFlatListContent}
+          ListHeaderComponent={groceryListHeader ?? undefined}
           ListEmptyComponent={
             <Text style={styles.empty}>
               {groceryLoading && online
@@ -367,7 +426,9 @@ export default function GroceriesScreen() {
           }
           renderItem={({ item: section }) => (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{section.label}</Text>
+              {section.key !== 'default' && (
+                <Text style={styles.sectionTitle}>{section.label}</Text>
+              )}
               {section.entries.length === 0 ? (
                 <Text style={styles.muted}>No items in this list.</Text>
               ) : (
@@ -504,6 +565,13 @@ const styles = StyleSheet.create({
   groceryFlatListContent: {
     flexGrow: 1,
     paddingBottom: 12,
+  },
+  lastRefreshed: {
+    color: '#64748b',
+    fontSize: 13,
+    fontStyle: 'italic',
+    marginBottom: 14,
+    textAlign: 'center',
   },
   input: {
     flex: 1,

@@ -4,6 +4,7 @@ import type { GuildGroceryList } from '@/lib/api/types'
 import type { UserGuild } from '@/lib/api/types'
 
 const PREFIX_GROCERY = 'offline:grocery-lists:'
+const PREFIX_GROCERY_FETCHED_AT = 'offline:grocery-fetched-at:'
 const KEY_GUILDS = 'offline:guilds'
 
 export async function saveGuildsCache(guilds: UserGuild[]): Promise<void> {
@@ -23,8 +24,21 @@ export async function loadGuildsCache(): Promise<UserGuild[] | null> {
 export async function saveGroceryListsCache(
   guildId: string,
   data: GuildGroceryList,
+  fetchedAtMs: number = Date.now(),
 ): Promise<void> {
-  await AsyncStorage.setItem(PREFIX_GROCERY + guildId, JSON.stringify(data))
+  await AsyncStorage.multiSet([
+    [PREFIX_GROCERY + guildId, JSON.stringify(data)],
+    [PREFIX_GROCERY_FETCHED_AT + guildId, String(fetchedAtMs)],
+  ])
+}
+
+export async function loadGroceryListsFetchedAt(
+  guildId: string,
+): Promise<number | null> {
+  const raw = await AsyncStorage.getItem(PREFIX_GROCERY_FETCHED_AT + guildId)
+  if (raw == null) return null
+  const n = Number(raw)
+  return Number.isFinite(n) ? n : null
 }
 
 export async function loadGroceryListsCache(
