@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -233,17 +235,15 @@ export default function GroceriesScreen() {
   const groceryListHeader = useMemo(() => {
     if (lastGroceryRefreshAtMs == null) return null
     const ago = formatRelativeAgo(lastGroceryRefreshAtMs, Date.now())
-    return (
-      <Text style={styles.lastRefreshed}>
-        Last refreshed {ago}
-      </Text>
-    )
+    return <Text style={styles.lastRefreshed}>Last refreshed {ago}</Text>
   }, [lastGroceryRefreshAtMs, relativeNowTick])
 
   const visibleSections = useMemo(() => {
     if (effectiveListFilter === 'all') return sections
     const wantKey =
-      effectiveListFilter === 'default' ? 'default' : String(effectiveListFilter)
+      effectiveListFilter === 'default'
+        ? 'default'
+        : String(effectiveListFilter)
     const filtered = sections.filter((s) => s.key === wantKey)
     if (filtered.length > 0) return filtered
     if (effectiveListFilter === 'default') {
@@ -326,7 +326,10 @@ export default function GroceriesScreen() {
   }
 
   const chipOrderIndex = selectedGuild
-    ? Math.max(0, guilds.findIndex((g) => g.id === effectiveGuildId))
+    ? Math.max(
+        0,
+        guilds.findIndex((g) => g.id === effectiveGuildId),
+      )
     : 0
 
   return (
@@ -334,150 +337,156 @@ export default function GroceriesScreen() {
       style={styles.screen}
       edges={['top', 'bottom', 'left', 'right']}
     >
-      <View style={styles.topBar}>
-        <Pressable
-          onPress={() => router.push('/(app)/guilds')}
-          style={styles.guildChip}
-          accessibilityRole="button"
-        >
-          <View style={styles.guildChipRow}>
-            <GuildAvatar
-              guild={chipGuild}
-              orderIndex={chipOrderIndex}
-              size={40}
-            />
-            <View style={styles.guildChipTextCol}>
-              <Text style={styles.guildChipText} numberOfLines={1}>
-                {guildLabel}
-              </Text>
-              <Text style={styles.guildChipHint}>Change</Text>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoiding}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
+        <View style={styles.topBar}>
+          <Pressable
+            onPress={() => router.push('/(app)/guilds')}
+            style={styles.guildChip}
+            accessibilityRole="button"
+          >
+            <View style={styles.guildChipRow}>
+              <GuildAvatar
+                guild={chipGuild}
+                orderIndex={chipOrderIndex}
+                size={40}
+              />
+              <View style={styles.guildChipTextCol}>
+                <Text style={styles.guildChipText} numberOfLines={1}>
+                  {guildLabel}
+                </Text>
+                <Text style={styles.guildChipHint}>Change</Text>
+              </View>
             </View>
-          </View>
-        </Pressable>
-      </View>
-
-      {!online && (
-        <View style={styles.offlineBanner}>
-          <Text style={styles.offlineText}>
-            Offline — showing saved data. Add and delete need internet.
-          </Text>
+          </Pressable>
         </View>
-      )}
 
-      {guildsError && online && (
-        <Text style={styles.warn}>{String(guildsError)}</Text>
-      )}
-      {groceryError && online && (
-        <Text style={styles.warn}>{String(groceryError)}</Text>
-      )}
-
-      {actionError && <Text style={styles.err}>{actionError}</Text>}
-
-      <View style={styles.mainColumn}>
-        {showGroceryListFilterPills && (
-          <View style={styles.listPick}>
-            <Text style={styles.listPickLabel}>List</Text>
-            <FlatList
-              horizontal
-              data={listOptions}
-              keyExtractor={(item) => String(item.id)}
-              showsHorizontalScrollIndicator={false}
-              renderItem={({ item }) => {
-                const selected = listFilter === item.id
-                return (
-                  <Pressable
-                    onPress={() => setListFilter(item.id)}
-                    style={[styles.listPill, selected && styles.listPillOn]}
-                  >
-                    <Text
-                      style={[
-                        styles.listPillText,
-                        selected && styles.listPillTextOn,
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
-                  </Pressable>
-                )
-              }}
-            />
+        {!online && (
+          <View style={styles.offlineBanner}>
+            <Text style={styles.offlineText}>
+              Offline — showing saved data. Add and delete need internet.
+            </Text>
           </View>
         )}
 
-        <FlatList
-          style={styles.groceryFlatList}
-          data={visibleSections}
-          keyExtractor={(s) => s.key}
-          keyboardShouldPersistTaps="handled"
-          refreshControl={
-            <RefreshControl
-              refreshing={(guildsLoading || groceryLoading) && online}
-              onRefresh={onRefresh}
-            />
-          }
-          contentContainerStyle={styles.groceryFlatListContent}
-          ListHeaderComponent={groceryListHeader ?? undefined}
-          ListEmptyComponent={
-            <Text style={styles.empty}>
-              {groceryLoading && online
-                ? 'Loading…'
-                : 'No groceries yet. Add something when you are online.'}
-            </Text>
-          }
-          renderItem={({ item: section }) => (
-            <View style={styles.section}>
-              {section.key !== 'default' && (
-                <Text style={styles.sectionTitle}>{section.label}</Text>
-              )}
-              {section.entries.length === 0 ? (
-                <Text style={styles.muted}>No items in this list.</Text>
-              ) : (
-                section.entries.map((entry) => (
-                  <View key={entry.id} style={styles.row}>
-                    <Text style={styles.itemText}>{entry.item_desc}</Text>
+        {guildsError && online && (
+          <Text style={styles.warn}>{String(guildsError)}</Text>
+        )}
+        {groceryError && online && (
+          <Text style={styles.warn}>{String(groceryError)}</Text>
+        )}
+
+        {actionError && <Text style={styles.err}>{actionError}</Text>}
+
+        <View style={styles.mainColumn}>
+          {showGroceryListFilterPills && (
+            <View style={styles.listPick}>
+              <Text style={styles.listPickLabel}>List</Text>
+              <FlatList
+                horizontal
+                data={listOptions}
+                keyExtractor={(item) => String(item.id)}
+                showsHorizontalScrollIndicator={false}
+                renderItem={({ item }) => {
+                  const selected = listFilter === item.id
+                  return (
                     <Pressable
-                      onPress={() => onDelete(entry.id)}
-                      disabled={busy || !online}
-                      style={styles.deleteHit}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Delete ${entry.item_desc}`}
+                      onPress={() => setListFilter(item.id)}
+                      style={[styles.listPill, selected && styles.listPillOn]}
                     >
                       <Text
                         style={[
-                          styles.delete,
-                          !online && styles.deleteDisabled,
+                          styles.listPillText,
+                          selected && styles.listPillTextOn,
                         ]}
                       >
-                        Remove
+                        {item.label}
                       </Text>
                     </Pressable>
-                  </View>
-                ))
-              )}
+                  )
+                }}
+              />
             </View>
           )}
-        />
-      </View>
 
-      <View style={styles.composerBar}>
-        <View style={styles.addRow}>
-          <TextInput
-            style={styles.input}
-            placeholder="Add an item…"
-            placeholderTextColor="#64748b"
-            value={newItem}
-            onChangeText={setNewItem}
-            editable={!busy}
-            onSubmitEditing={onAdd}
-          />
-          <Button
-            title="Add"
-            loading={busy}
-            disabled={!newItem.trim()}
-            onPress={onAdd}
+          <FlatList
+            style={styles.groceryFlatList}
+            data={visibleSections}
+            keyExtractor={(s) => s.key}
+            keyboardShouldPersistTaps="handled"
+            refreshControl={
+              <RefreshControl
+                refreshing={(guildsLoading || groceryLoading) && online}
+                onRefresh={onRefresh}
+              />
+            }
+            contentContainerStyle={styles.groceryFlatListContent}
+            ListHeaderComponent={groceryListHeader ?? undefined}
+            ListEmptyComponent={
+              <Text style={styles.empty}>
+                {groceryLoading && online
+                  ? 'Loading…'
+                  : 'No groceries yet. Add something when you are online.'}
+              </Text>
+            }
+            renderItem={({ item: section }) => (
+              <View style={styles.section}>
+                {section.key !== 'default' && (
+                  <Text style={styles.sectionTitle}>{section.label}</Text>
+                )}
+                {section.entries.length === 0 ? (
+                  <Text style={styles.muted}>No items in this list.</Text>
+                ) : (
+                  section.entries.map((entry) => (
+                    <View key={entry.id} style={styles.row}>
+                      <Text style={styles.itemText}>{entry.item_desc}</Text>
+                      <Pressable
+                        onPress={() => onDelete(entry.id)}
+                        disabled={busy || !online}
+                        style={styles.deleteHit}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Delete ${entry.item_desc}`}
+                      >
+                        <Text
+                          style={[
+                            styles.delete,
+                            !online && styles.deleteDisabled,
+                          ]}
+                        >
+                          Remove
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ))
+                )}
+              </View>
+            )}
           />
         </View>
-      </View>
+
+        <View style={styles.composerBar}>
+          <View style={styles.addRow}>
+            <TextInput
+              style={styles.input}
+              placeholder="Add an item…"
+              placeholderTextColor="#64748b"
+              value={newItem}
+              onChangeText={setNewItem}
+              editable={!busy}
+              onSubmitEditing={onAdd}
+            />
+            <Button
+              title="Add"
+              loading={busy}
+              disabled={!newItem.trim()}
+              onPress={onAdd}
+            />
+          </View>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
@@ -488,6 +497,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#0f172a',
     paddingHorizontal: 16,
     paddingTop: 8,
+  },
+  keyboardAvoiding: {
+    flex: 1,
   },
   mainColumn: {
     flex: 1,
