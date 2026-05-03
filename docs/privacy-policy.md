@@ -1,14 +1,14 @@
-# Privacy Policy — GroceryApp
+# Privacy Policy — GroceryBot App
 
 **Last updated:** May 2, 2026
 
-**Operator ("we"):** Benjamin Tanone, the maintainer of GroceryBot and GroceryApp ([github.com/verzac](https://github.com/verzac)).
+**Operator ("we"):** Benjamin Tanone, the maintainer of GroceryBot and ([github.com/verzac](https://github.com/verzac)).
 
 **Contact:** [hello@benjamintanone.com](mailto:hello@benjamintanone.com)
 
-This policy explains how **GroceryApp** — the mobile client for the GroceryBot service at [grocerybot.net](https://grocerybot.net) — handles your information. The app connects to **api.grocerybot.net** so you can manage grocery lists tied to Discord servers ("guilds") you belong to.
+This policy explains how **GroceryBot App** — the mobile client for the GroceryBot service at [grocerybot.net](https://grocerybot.net) — handles your information. The app connects to **api.grocerybot.net** so you can manage grocery lists tied to Discord servers ("guilds") you belong to.
 
-**Read alongside:** the [GroceryBot website privacy policy](https://grocerybot.net/privacy-policy/), which covers the bot itself, server-side storage, human access to data, backend performance aggregates, error-log retention (~14 days), and `/groreset`. This document adds the details specific to GroceryApp: in-app OAuth login, the local offline cache, and planned mobile analytics and crash tooling. **If anything here conflicts with the website privacy policy, the website policy takes precedence.**
+**Read alongside:** the [GroceryBot website privacy policy](https://grocerybot.net/privacy-policy/), which covers the bot itself, server-side storage, human access to data, backend performance aggregates, error-log retention (~14 days), and `/groreset`. This document adds the details specific to GroceryBot App: in-app OAuth login, the local offline cache, and planned mobile analytics and crash tooling. **If anything here conflicts with the website privacy policy, the website policy takes precedence.**
 
 ## Where data lives
 
@@ -79,7 +79,7 @@ Protect your device and your Discord account — anyone with access to either co
 
 ## Regional notices
 
-Privacy laws vary by country and region. We have not added jurisdiction-specific annexes (such as GDPR-style rights wording for the EEA/UK, California CPRA disclosures, or Brazilian LGPD notices), because GroceryApp is a hobby-scale service without commercial ad-tech or storefront-driven compliance requirements.
+Privacy laws vary by country and region. We have not added jurisdiction-specific annexes (such as GDPR-style rights wording for the EEA/UK, California CPRA disclosures, or Brazilian LGPD notices), because GroceryBot App is a hobby-scale service without commercial ad-tech or storefront-driven compliance requirements.
 
 This policy already covers Singapore storage, operator identity, contact email, the minors stance, the `/groreset` Patreon carve-out, analytics and crash scopes, and links to the [grocerybot.net policy](https://grocerybot.net/privacy-policy/). If you are in a region that gives you statutory rights — such as access, erasure, portability, objection, restriction, or the right to complain to a supervisory authority — you can exercise them by emailing **[hello@benjamintanone.com](mailto:hello@benjamintanone.com)**.
 
