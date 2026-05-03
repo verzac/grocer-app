@@ -1,24 +1,17 @@
 import * as AuthSession from 'expo-auth-session'
-import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { Button } from '@/components/ui/Button'
-import { useTokenExchange } from '@/hooks/data/useTokenExchange'
 import {
   DISCORD_OAUTH_SCOPES,
   getDiscordClientId,
   getDiscordOAuthRedirectUri,
 } from '@/lib/config'
-import {
-  clearPendingOAuth,
-  setPendingOAuth,
-  setTokens,
-} from '@/lib/storage/secureTokens'
+import { clearPendingOAuth, setPendingOAuth } from '@/lib/storage/secureTokens'
 
 export default function LoginScreen() {
-  const router = useRouter()
   const clientId = getDiscordClientId()
   const redirectUri = useMemo(() => getDiscordOAuthRedirectUri(), [])
 
@@ -39,46 +32,24 @@ export default function LoginScreen() {
     discovery,
   )
 
-  const [busy, setBusy] = useState(false)
+  const [prompting, setPrompting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { trigger: exchangeToken, isMutating } = useTokenExchange()
 
   useEffect(() => {
-    async function exchange() {
-      if (response?.type !== 'success' || !request) return
-      const code = response.params.code
-      if (!code) {
-        setError('No authorization code returned.')
-        return
-      }
-      if (!request.codeVerifier) {
-        setError('Missing PKCE verifier. Please try again.')
-        return
-      }
-
-      setBusy(true)
-      setError(null)
-      try {
-        const data = await exchangeToken({
-          code,
-          codeVerifier: request.codeVerifier,
-          redirectUri,
-        })
-        await setTokens(data.access_token, data.refresh_token, data.expires_in)
-        await clearPendingOAuth()
-        console.log('###login: token exchange ok')
-        router.dismissTo('/(app)')
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : 'Login failed'
-        setError(msg)
-        console.log('###login error', msg)
-      } finally {
-        setBusy(false)
-      }
+    if (!response || response.type === 'success') return
+    if (response.type === 'error') {
+      const p = response.params as Record<string, string | undefined>
+      const code = p.error
+      const desc = p.error_description
+      const line = [code, desc].filter(Boolean).join(': ')
+      setError(line || 'Discord sign-in failed.')
+      void clearPendingOAuth()
+      return
     }
-
-    exchange()
-  }, [exchangeToken, response, request, redirectUri, router])
+    if (response.type === 'cancel' || response.type === 'dismiss') {
+      void clearPendingOAuth()
+    }
+  }, [response])
 
   return (
     <SafeAreaView
@@ -95,7 +66,7 @@ export default function LoginScreen() {
 
         <Button
           title="Continue with Discord"
-          loading={busy || isMutating}
+          loading={prompting}
           disabled={!request}
           onPress={async () => {
             setError(null)
@@ -104,11 +75,14 @@ export default function LoginScreen() {
               return
             }
 
+            setPrompting(true)
             try {
               await setPendingOAuth(request.codeVerifier, request.state)
               await promptAsync()
             } catch (e) {
               setError(e instanceof Error ? e.message : 'OAuth failed')
+            } finally {
+              setPrompting(false)
             }
           }}
         />
