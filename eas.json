@@ -7,7 +7,11 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "development"
+      "channel": "development",
+      "env": {
+        "EAS_USE_CACHE": "1",
+        "EAS_GRADLE_CACHE": "1"
+      }
     },
     "preview": {
       "distribution": "internal",
