@@ -13,11 +13,11 @@ const config: ExpoConfig = {
     url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
   },
   orientation: 'portrait',
-  icon: './assets/icon.png',
+  icon: './assets/grocerybot.png',
   userInterfaceStyle: 'automatic',
   scheme: 'groceryapp',
   splash: {
-    image: './assets/splash-icon.png',
+    image: './assets/grocerybot.png',
     resizeMode: 'contain',
     backgroundColor: '#0f172a',
   },
@@ -27,7 +27,7 @@ const config: ExpoConfig = {
   },
   android: {
     adaptiveIcon: {
-      foregroundImage: './assets/adaptive-icon.png',
+      foregroundImage: './assets/grocerybot.png',
       backgroundColor: '#0f172a',
     },
     predictiveBackGestureEnabled: false,
@@ -47,7 +47,7 @@ const config: ExpoConfig = {
     ],
   },
   web: {
-    favicon: './assets/favicon.png',
+    favicon: './assets/grocerybot.png',
     bundler: 'metro',
   },
   plugins: [
