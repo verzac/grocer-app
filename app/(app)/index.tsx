@@ -1,7 +1,9 @@
 import { useFocusEffect } from '@react-navigation/native'
+import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -21,7 +23,7 @@ import { Button } from '@/components/ui/Button'
 import { useOnline } from '@/hooks/useOnline'
 import {
   createGrocery,
-  deleteGrocery,
+  deleteGroceriesBatch,
   getGroceryLists,
   getGuilds,
 } from '@/lib/api/client'
@@ -44,6 +46,7 @@ import {
 } from '@/lib/storage/guildSelection'
 
 type ListPillId = 'all' | 'default' | number
+const MAX_BULK_DELETE_IDS = 100
 
 export default function GroceriesScreen() {
   const router = useRouter()
@@ -200,9 +203,15 @@ export default function GroceriesScreen() {
   }, [groceryData, listById])
 
   const [newItem, setNewItem] = useState('')
+  const [selectedEntryIds, setSelectedEntryIds] = useState<number[]>([])
   const [listFilter, setListFilter] = useState<ListPillId>('all')
   const [actionError, setActionError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const selectedCount = selectedEntryIds.length
+  const selectedIdSet = useMemo(
+    () => new Set(selectedEntryIds),
+    [selectedEntryIds],
+  )
 
   const listOptions = useMemo(() => {
     const opts: { id: ListPillId; label: string }[] = [
@@ -293,8 +302,27 @@ export default function GroceriesScreen() {
     }
   }
 
-  const onDelete = async (id: number) => {
+  useEffect(() => {
+    setSelectedEntryIds([])
+  }, [effectiveGuildId])
+
+  const onToggleSelect = (id: number) => {
+    if (busy || !online) return
+    const isChecked = selectedIdSet.has(id)
+    if (!isChecked && selectedCount >= MAX_BULK_DELETE_IDS) {
+      setActionError(`You can select up to ${MAX_BULK_DELETE_IDS} items.`)
+      return
+    }
+    setActionError(null)
+    setSelectedEntryIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id)
+      return [...prev, id]
+    })
+  }
+
+  const onDeleteSelected = async () => {
     if (!effectiveGuildId) return
+    if (selectedCount === 0) return
     if (!online) {
       setActionError('You need a connection to delete items.')
       return
@@ -302,14 +330,33 @@ export default function GroceriesScreen() {
     setBusy(true)
     setActionError(null)
     try {
-      await deleteGrocery(effectiveGuildId, id)
+      await deleteGroceriesBatch(effectiveGuildId, selectedEntryIds)
       await mutateGroceries()
-      console.log('###grocery: deleted', id)
+      setSelectedEntryIds([])
+      console.log('###grocery: bulk deleted', selectedEntryIds.length)
     } catch (e) {
       setActionError(e instanceof Error ? e.message : 'Could not delete')
     } finally {
       setBusy(false)
     }
+  }
+
+  const onPressDelete = () => {
+    if (selectedCount === 0) return
+    Alert.alert(
+      'Delete selected items?',
+      `Delete ${selectedCount} selected grocery item${selectedCount === 1 ? '' : 's'}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            void onDeleteSelected()
+          },
+        },
+      ],
+    )
   }
 
   const selectedGuild =
@@ -441,25 +488,35 @@ export default function GroceriesScreen() {
                   <Text style={styles.muted}>No items in this list.</Text>
                 ) : (
                   section.entries.map((entry) => (
-                    <View key={entry.id} style={styles.row}>
+                    <Pressable
+                      key={entry.id}
+                      onPress={() => onToggleSelect(entry.id)}
+                      disabled={
+                        busy ||
+                        !online ||
+                        (!selectedIdSet.has(entry.id) &&
+                          selectedCount >= MAX_BULK_DELETE_IDS)
+                      }
+                      style={styles.row}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{
+                        checked: selectedIdSet.has(entry.id),
+                      }}
+                      accessibilityLabel={`Select ${entry.item_desc}`}
+                    >
                       <Text style={styles.itemText}>{entry.item_desc}</Text>
-                      <Pressable
-                        onPress={() => onDelete(entry.id)}
-                        disabled={busy || !online}
-                        style={styles.deleteHit}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Delete ${entry.item_desc}`}
+                      <View
+                        style={[
+                          styles.checkbox,
+                          selectedIdSet.has(entry.id) && styles.checkboxChecked,
+                          (!online || busy) && styles.checkboxDisabled,
+                        ]}
                       >
-                        <Text
-                          style={[
-                            styles.delete,
-                            !online && styles.deleteDisabled,
-                          ]}
-                        >
-                          Remove
-                        </Text>
-                      </Pressable>
-                    </View>
+                        {selectedIdSet.has(entry.id) ? (
+                          <Ionicons name="checkmark" size={16} color="#f8fafc" />
+                        ) : null}
+                      </View>
+                    </Pressable>
                   ))
                 )}
               </View>
@@ -468,23 +525,41 @@ export default function GroceriesScreen() {
         </View>
 
         <View style={styles.composerBar}>
-          <View style={styles.addRow}>
-            <TextInput
-              style={styles.input}
-              placeholder="Add an item…"
-              placeholderTextColor="#64748b"
-              value={newItem}
-              onChangeText={setNewItem}
-              editable={!busy}
-              onSubmitEditing={onAdd}
-            />
-            <Button
-              title="Add"
-              loading={busy}
-              disabled={!newItem.trim()}
-              onPress={onAdd}
-            />
-          </View>
+          {selectedCount > 0 ? (
+            <View style={styles.bulkRow}>
+              {/* <Text style={styles.bulkText}>Delete {selectedCount} item(s)</Text> */}
+              <Button
+                title="Cancel"
+                variant="secondary"
+                disabled={busy}
+                onPress={() => setSelectedEntryIds([])}
+              />
+              <Button
+                title="Delete"
+                variant="danger"
+                loading={busy}
+                onPress={onPressDelete}
+              />
+            </View>
+          ) : (
+            <View style={styles.addRow}>
+              <TextInput
+                style={styles.input}
+                placeholder="Add an item..."
+                placeholderTextColor="#64748b"
+                value={newItem}
+                onChangeText={setNewItem}
+                editable={!busy}
+                onSubmitEditing={onAdd}
+              />
+              <Button
+                title="Add"
+                loading={busy}
+                disabled={!newItem.trim()}
+                onPress={onAdd}
+              />
+            </View>
+          )}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -571,6 +646,17 @@ const styles = StyleSheet.create({
     gap: 8,
     alignItems: 'center',
   },
+  bulkRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  bulkText: {
+    flex: 1,
+    color: '#f1f5f9',
+    fontWeight: '600',
+  },
   groceryFlatList: {
     flex: 1,
   },
@@ -641,25 +727,33 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#334155',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#94a3b8',
+    backgroundColor: '#1e293b',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#16a34a',
+    borderColor: '#16a34a',
+  },
+  checkboxDisabled: {
+    opacity: 0.4,
   },
   itemText: {
     flex: 1,
     color: '#f1f5f9',
     fontSize: 16,
-  },
-  deleteHit: {
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-  },
-  delete: {
-    color: '#fca5a5',
-    fontWeight: '600',
-  },
-  deleteDisabled: {
-    opacity: 0.4,
   },
   empty: {
     color: '#64748b',

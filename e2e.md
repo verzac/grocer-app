@@ -54,7 +54,7 @@ See also: [GroceryBot OpenAPI](https://github.com/verzac/grocer-discord-bot/blob
 1. **Cold start**: If no refresh token in Secure Store → **Login** (`/(auth)/login`). If session exists → **Groceries** (`/(app)`).
 2. **Login**: Open Discord in the system browser (PKCE). Redirect returns to `groceryapp://auth/callback` with `code` → app calls **`POST /auth/token`** with `code`, `code_verifier`, `redirect_uri` → stores access + refresh tokens in **Expo Secure Store**; tracks access expiry for refresh.
 3. **Guilds**: **`GET /guilds`** (Bearer, no `X-Guild-ID`). First guild in the list is selected by default if nothing valid is stored; user can open **Servers** and pick another (`/(app)/guilds`); selection persisted in AsyncStorage.
-4. **Groceries**: **`GET /grocery-lists`** with `X-Guild-ID`. **`POST /groceries`** to create (optional `grocery_list_id`; null = default list). **`DELETE /groceries/:id`** to remove.
+4. **Groceries**: **`GET /grocery-lists`** with `X-Guild-ID`. **`POST /groceries`** to create (optional `grocery_list_id`; null = default list). **`DELETE /groceries`** with `{ ids: [...] }` for batch remove (app caps at 100 selected items per delete action).
 5. **Token refresh**: On 401 or near-expiry, **`POST /auth/refresh`** with rotation; new tokens saved to Secure Store.
 6. **Offline**: When the device reports no network, SWR does not refetch; UI shows **cached** guild list and per-guild grocery payload from **AsyncStorage** (last successful online sync). **Add and delete are disabled** with an on-screen message; read still works from cache.
 7. **Logout**: From Servers screen, **Log out** calls **`POST /auth/logout`** when online (then clears tokens) or clears local tokens when offline; clears selected guild id and returns to login.
@@ -79,13 +79,13 @@ Run through these on a **clean install** (clear app data / reinstall) unless not
 
 - [ ] **E3.1** Pull to refresh: lists load without persistent error banners.
 - [ ] **E3.2** Choose a list pill (Default vs named lists); add an item → appears after sync; **`POST /groceries`** path exercised.
-- [ ] **E3.3** Remove an item → disappears; **`DELETE /groceries/:id`** exercised.
+- [ ] **E3.3** Select one or more rows using checkboxes, tap **Delete** in the composer bar, confirm the prompt → selected items disappear; **`DELETE /groceries`** with `{ ids: [...] }` exercised.
 
 ### E4 — Offline read, no writes
 
 - [ ] **E4.1** With data loaded, enable **airplane mode** (or disable Wi‑Fi/cellular).
 - [ ] **E4.2** Banner indicates offline; previous groceries and guild chip still visible from cache.
-- [ ] **E4.3** Add / delete show expectation that internet is required; no successful write while offline.
+- [ ] **E4.3** Add / bulk delete show expectation that internet is required; no successful write while offline.
 
 ### E5 — Back online
 

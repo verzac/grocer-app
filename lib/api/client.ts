@@ -132,19 +132,30 @@ export async function createGrocery(
   }
 }
 
-export async function deleteGrocery(
+const MAX_BULK_DELETE_IDS = 100
+
+export async function deleteGroceriesBatch(
   guildId: string,
-  id: number,
+  ids: number[],
 ): Promise<void> {
+  if (ids.length === 0 || ids.length > MAX_BULK_DELETE_IDS) {
+    throw new Error(
+      `DELETE /groceries requires 1-${MAX_BULK_DELETE_IDS} ids per request`,
+    )
+  }
+
   await withTransientRetries(TRANSIENT_RETRY_ATTEMPTS, async () => {
-    const res = await fetchWithAuth(`/groceries/${id}`, {
+    const res = await fetchWithAuth('/groceries', {
       method: 'DELETE',
       guildId,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
     })
     if (res.ok) return
     if (shouldRetryHttpForGet(res.status))
       throw new TransientHttpError(res.status)
-    throw new Error(`DELETE /groceries/${id} failed: ${res.status}`)
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `DELETE /groceries failed: ${res.status}`)
   })
 }
 
