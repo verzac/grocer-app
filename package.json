@@ -7,6 +7,7 @@
     "android": "expo start --dev-client --android",
     "ios": "expo start --dev-client --ios",
     "web": "expo start --web",
+    "eas:update": "pnpm eas:update:production",
     "eas:build:dev:ios": "eas build --profile development --platform ios",
     "eas:build:dev:android": "eas build --profile development --platform android",
     "eas:build:preview": "eas build --profile preview --platform all",
