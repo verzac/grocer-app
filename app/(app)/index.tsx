@@ -14,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import Animated, { BounceIn, ZoomOut } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import useSWR from 'swr'
 
@@ -513,7 +514,12 @@ export default function GroceriesScreen() {
                         ]}
                       >
                         {selectedIdSet.has(entry.id) ? (
-                          <Ionicons name="checkmark" size={16} color="#f8fafc" />
+                          <Animated.View
+                            entering={BounceIn.duration(240)}
+                            exiting={ZoomOut.duration(90)}
+                          >
+                            <Ionicons name="checkmark" size={16} color="#f8fafc" />
+                          </Animated.View>
                         ) : null}
                       </View>
                     </Pressable>
