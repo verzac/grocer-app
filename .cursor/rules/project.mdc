@@ -13,3 +13,5 @@ Basic requirements: one must be able to:
 API docs: https://github.com/verzac/grocer-discord-bot/blob/master/openapi.yaml
 
 Integration guide: https://github.com/verzac/grocer-discord-bot/blob/master/.cursor/specs/SPEC-001-auth-rework-for-apps/integration-guide.md
+
+This will NOT be deployed as a web app. Target platform is only Android and iOS.
