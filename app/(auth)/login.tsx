@@ -1,6 +1,6 @@
 import * as AuthSession from 'expo-auth-session'
 import { useEffect, useMemo, useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Image, Linking, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { Button } from '@/components/ui/Button'
@@ -10,6 +10,8 @@ import {
   getDiscordOAuthRedirectUri,
 } from '@/lib/config'
 import { clearPendingOAuth, setPendingOAuth } from '@/lib/storage/secureTokens'
+
+const PRIVACY_POLICY_URL = 'https://grocerybot.net/privacy-policy-mobile'
 
 export default function LoginScreen() {
   const clientId = getDiscordClientId()
@@ -57,10 +59,48 @@ export default function LoginScreen() {
       edges={['top', 'bottom', 'left', 'right']}
     >
       <View style={styles.card}>
-        <Text style={styles.title}>GroceryApp</Text>
+        <View style={styles.titleRow}>
+          <Image
+            accessibilityLabel="GroceryBot"
+            source={require('../../assets/grocerybot.png')}
+            style={styles.titleLogo}
+          />
+          <Text style={styles.title}>GroceryBot App</Text>
+        </View>
         <Text style={styles.subtitle}>
           Sign in with Discord to manage groceries for your servers.
         </Text>
+
+        <View style={styles.disclaimerBlock}>
+          <Text style={styles.disclaimerHint}>
+            We use your Discord login to
+          </Text>
+          <View style={styles.listItemRow}>
+            <Text style={[styles.disclaimerHint, styles.listMarker]}>(1)</Text>
+            <Text style={[styles.disclaimerHint, styles.listItemText]}>
+              find your list of Discord servers; and
+            </Text>
+          </View>
+          <View style={styles.listItemRow}>
+            <Text style={[styles.disclaimerHint, styles.listMarker]}>(2)</Text>
+            <Text style={[styles.disclaimerHint, styles.listItemText]}>
+              retrieve the grocery lists for that server.
+            </Text>
+          </View>
+          <Text style={styles.disclaimerHint}>
+            We do <Text style={styles.emphasis}>not</Text> store your personal
+            information (e.g. avatar, nicknames, username). You can read more
+            about this in our{' '}
+            <Text
+              accessibilityRole="link"
+              style={styles.disclaimerLink}
+              onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}
+            >
+              Privacy Policy
+            </Text>
+            .
+          </Text>
+        </View>
 
         {error && <Text style={styles.err}>{error}</Text>}
 
@@ -86,12 +126,6 @@ export default function LoginScreen() {
             }
           }}
         />
-
-        <Text style={styles.hint}>Redirect URI: {redirectUri}</Text>
-        <Text style={styles.hintSmall}>
-          This must match Discord OAuth2 → Redirects and the API allowlist for
-          token exchange.
-        </Text>
       </View>
     </SafeAreaView>
   )
@@ -112,10 +146,21 @@ const styles = StyleSheet.create({
     borderColor: '#334155',
     gap: 16,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  titleLogo: {
+    width: 44,
+    height: 44,
+    resizeMode: 'contain',
+  },
   title: {
     fontSize: 28,
     fontWeight: '700',
     color: '#f8fafc',
+    flexShrink: 1,
   },
   subtitle: {
     fontSize: 15,
@@ -126,14 +171,32 @@ const styles = StyleSheet.create({
     color: '#fecaca',
     fontSize: 14,
   },
-  hint: {
-    fontSize: 12,
-    color: '#94a3b8',
-    marginTop: 4,
+  disclaimerBlock: {
+    gap: 8,
   },
-  hintSmall: {
-    fontSize: 11,
-    color: '#64748b',
-    lineHeight: 16,
+  disclaimerHint: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#94a3b8',
+  },
+  listItemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingLeft: 4,
+  },
+  listMarker: {
+    minWidth: 28,
+  },
+  listItemText: {
+    flex: 1,
+  },
+  emphasis: {
+    fontStyle: 'italic',
+  },
+  disclaimerLink: {
+    fontSize: 13,
+    color: '#93c5fd',
+    textDecorationLine: 'underline',
   },
 })
