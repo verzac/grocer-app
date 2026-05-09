@@ -1,15 +1,15 @@
 # GroceryApp — local setup and manual E2E plan
 
-This document describes how to run **GroceryApp** locally and how to verify behavior end-to-end without automated test runners. It matches the flows implemented in this repo (Expo Router, Discord OAuth + PKCE, GroceryBot API, guild selection, grocery CRUD, offline read cache).
+This document describes how to run **GroceryApp** locally and how to verify behavior end-to-end without automated test runners. It matches the flows implemented in this repo (Expo Router, Discord OAuth + PKCE, GroceryBot API, guild selection, grocery CRUD, offline read cache, periodic background grocery sync).
 
 ## Prerequisites
 
-- **Node.js** (LTS recommended; align with Expo SDK 54 docs)
+- **Node.js** (LTS recommended; align with **Expo SDK 55** and this repo’s `package.json`)
 - **pnpm** (this repo pins `packageManager` in `package.json`)
 - **Expo tooling**: `pnpm dlx expo-doctor` is optional but useful after install
 - A way to run the app:
-  - **Expo Go** on a physical device, or
-  - **iOS Simulator** (macOS + Xcode) / **Android Emulator** (Android Studio)
+  - **Development build** (**Expo dev client**) on a device or emulator — this repo’s `pnpm start` uses `--dev-client`; required for native modules such as **`expo-background-task`**, or
+  - **Expo Go** on a physical device if compatible with your SDK/native deps (when in doubt, use a dev client build).
 
 ## Local setup
 
@@ -57,7 +57,8 @@ See also: [GroceryBot OpenAPI](https://github.com/verzac/grocer-discord-bot/blob
 4. **Groceries**: **`GET /grocery-lists`** with `X-Guild-ID`. **`POST /groceries`** to create (optional `grocery_list_id`; null = default list). **`DELETE /groceries`** with `{ ids: [...] }` for batch remove (app caps at 100 selected items per delete action).
 5. **Token refresh**: On 401 or near-expiry, **`POST /auth/refresh`** with rotation; new tokens saved to Secure Store.
 6. **Offline**: When the device reports no network, SWR does not refetch; UI shows **cached** guild list and per-guild grocery payload from **AsyncStorage** (last successful online sync). **Add and delete are disabled** with an on-screen message; read still works from cache.
-7. **Logout**: From Servers screen, **Log out** calls **`POST /auth/logout`** when online (then clears tokens) or clears local tokens when offline; clears selected guild id and returns to login.
+7. **Logout**: From Servers screen, **Log out** calls **`POST /auth/logout`** when online (then clears tokens) or clears local tokens when offline; clears selected guild id, **unregisters** the background grocery sync task, and returns to login.
+8. **Background grocery sync** ([Expo BackgroundTask](https://docs.expo.dev/versions/latest/sdk/background-task/)): When a session exists, the app **registers** a deferrable background task (on cold start with a session and after successful login). The task runs **`GET /guilds`** and writes the guild list to the offline cache, resolves the **effective guild** the same way as the main Groceries screen (stored selection if still valid, otherwise the first guild), then runs **`GET /grocery-lists`** for that guild and persists the payload to **AsyncStorage** with a fresh timestamp. **Timing is OS-controlled** (battery/network heuristics); it is not a fixed wall-clock interval. On logout, the task is **unregistered**.
 
 ## Manual E2E checklist
 
@@ -96,6 +97,14 @@ Run through these on a **clean install** (clear app data / reinstall) unless not
 - [ ] **E6.1** After ~15 minutes (or forced token expiry if you test that way), using the app should still work (refresh path) or prompt re-login if refresh invalid.
 - [ ] **E6.2** Servers → **Log out**: returns to login; **`GET /grocery-lists`** should 401 until login again.
 - [ ] **E6.3** Optional: log out while offline; local session cleared and login screen shown.
+
+### E7 — Background grocery sync
+
+- [ ] **E7.1** **Build:** Use a **native binary** that includes `expo-background-task` (e.g. local **development build** / **EAS** build). Rebuild after adding or upgrading this native module; OTA update alone is not enough.
+- [ ] **E7.2** **iOS:** The [Background Tasks API is not available on the iOS Simulator](https://docs.expo.dev/versions/latest/sdk/background-task/) — use a **physical iPhone** to validate real deferred execution, or rely on the dev trigger below.
+- [ ] **E7.3** **Dev-only trigger:** In a **debug** build, call `BackgroundTask.triggerTaskWorkerForTestingAsync()` from the [Expo BackgroundTask docs](https://docs.expo.dev/versions/latest/sdk/background-task/) (e.g. temporary dev UI button or REPL) so the worker runs without waiting for the OS. This API **does not work in production** builds.
+- [ ] **E7.4** **Cache check:** Change the grocery list using the API or another client while the test device stays **online**; invoke the background sync (wait for the system schedule or use **E7.3**). Then open the app **offline** (airplane mode) and confirm Groceries (and “last refreshed” / cache behavior if shown) reflect the updated data for the effective guild.
+- [ ] **E7.5** **Android (optional):** Inspect or force scheduled work with `adb`/JobScheduler as described under [Inspecting background tasks](https://docs.expo.dev/versions/latest/sdk/background-task/#inspecting-background-tasks) in the Expo docs.
 
 ## Automated E2E (not in repo yet)
 

@@ -7,6 +7,7 @@ import useSWR from 'swr'
 import { GuildAvatar } from '@/components/GuildAvatar'
 import { Button } from '@/components/ui/Button'
 import { useOnline } from '@/hooks/useOnline'
+import { unregisterGroceryBackgroundSync } from '@/lib/background/groceryBackgroundSync'
 import { getGuilds, signOut } from '@/lib/api/client'
 import type { UserGuild } from '@/lib/api/types'
 import { loadGuildsCache, saveGuildsCache } from '@/lib/storage/offlineCache'
@@ -48,6 +49,7 @@ export default function GuildsScreen() {
   const onLogout = async () => {
     await signOut(online)
     await clearSelectedGuildId()
+    await unregisterGroceryBackgroundSync()
     console.log('###session: logged out')
     router.replace('/(auth)/login')
   }

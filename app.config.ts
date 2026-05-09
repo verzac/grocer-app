@@ -5,7 +5,7 @@ const EAS_PROJECT_ID = '16bf991e-d6e0-45c7-b22a-c2630c2052be'
 const config: ExpoConfig = {
   name: 'GroceryApp',
   slug: 'grocery-app',
-  version: '1.1.0',
+  version: '1.2.0',
   runtimeVersion: {
     policy: 'appVersion',
   },
@@ -56,6 +56,7 @@ const config: ExpoConfig = {
     'expo-secure-store',
     '@react-native-async-storage/expo-with-async-storage',
     'expo-updates',
+    'expo-background-task',
   ],
   experiments: {
     typedRoutes: true,

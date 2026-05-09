@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { Button } from '@/components/ui/Button'
 import { useTokenExchange } from '@/hooks/data/useTokenExchange'
+import { registerGroceryBackgroundSyncIfNeeded } from '@/lib/background/groceryBackgroundSync'
 import { getDiscordOAuthRedirectUri } from '@/lib/config'
 import {
   clearPendingOAuth,
@@ -60,6 +61,7 @@ export default function OAuthCallbackScreen() {
         })
         await setTokens(data.access_token, data.refresh_token, data.expires_in)
         await clearPendingOAuth()
+        await registerGroceryBackgroundSyncIfNeeded()
         console.log('###callback: token exchange ok')
         router.dismissTo('/(app)')
       } catch (e) {

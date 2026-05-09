@@ -28,6 +28,7 @@
     "@react-native-community/netinfo": "^11.5.2",
     "expo": "~55.0.17",
     "expo-auth-session": "^55.0.15",
+    "expo-background-task": "~55.0.17",
     "expo-constants": "^55.0.15",
     "expo-dev-client": "^55.0.28",
     "expo-linking": "^55.0.14",
