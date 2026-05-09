@@ -89,8 +89,9 @@ export default function LoginScreen() {
           </View>
           <Text style={styles.disclaimerHint}>
             We do <Text style={styles.emphasis}>not</Text> store your personal
-            information (e.g. avatar, nicknames, username). You can read more
-            about this in our{' '}
+            information (e.g. nicknames, username). User and server avatars are
+            forwarded straight from Discord to you. You can read more about this
+            in our{' '}
             <Text
               accessibilityRole="link"
               style={styles.disclaimerLink}
