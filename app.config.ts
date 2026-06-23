@@ -7,7 +7,7 @@ const config: ExpoConfig = {
   slug: 'grocery-app',
   version: '1.2.1',
   runtimeVersion: {
-    policy: 'appVersion',
+    policy: 'fingerprint',
   },
   updates: {
     url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
