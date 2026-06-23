@@ -1,6 +1,7 @@
 import * as AuthSession from 'expo-auth-session'
+import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
-import { Image, Linking, StyleSheet, Text, View } from 'react-native'
+import { Image, Linking, Platform, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { Button } from '@/components/ui/Button'
@@ -14,6 +15,7 @@ import { clearPendingOAuth, setPendingOAuth } from '@/lib/storage/secureTokens'
 const PRIVACY_POLICY_URL = 'https://grocerybot.net/privacy-policy-mobile'
 
 export default function LoginScreen() {
+  const router = useRouter()
   const clientId = getDiscordClientId()
   const redirectUri = useMemo(() => getDiscordOAuthRedirectUri(), [])
 
@@ -38,7 +40,25 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!response || response.type === 'success') return
+    if (!response) return
+    if (response.type === 'success') {
+      // iOS only: ASWebAuthenticationSession captures the redirect URI internally
+      // and never dispatches it as a deep link, so Expo Router won't navigate to
+      // app/auth/callback.tsx. We must navigate there manually.
+      // On Android, Chrome Custom Tabs delivers the redirect as an intent that
+      // Expo Router handles as a deep link, so navigating here would cause a
+      // double-navigation (jank flash + stale back-stack entry).
+      if (Platform.OS === 'ios') {
+        const { code, state } = response.params
+        if (code) {
+          router.replace({
+            pathname: '/auth/callback',
+            params: { code, state },
+          })
+        }
+      }
+      return
+    }
     if (response.type === 'error') {
       const p = response.params as Record<string, string | undefined>
       const code = p.error
@@ -51,7 +71,7 @@ export default function LoginScreen() {
     if (response.type === 'cancel' || response.type === 'dismiss') {
       void clearPendingOAuth()
     }
-  }, [response])
+  }, [response, router])
 
   return (
     <SafeAreaView
