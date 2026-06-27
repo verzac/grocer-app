@@ -9,3 +9,6 @@ yarn.lock
 
 # Not listed in .gitignore; omit from formatting when present locally or in CI.
 coverage/
+
+# i do not care.
+*.md
