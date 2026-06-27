@@ -16,11 +16,6 @@ const config: ExpoConfig = {
   icon: './assets/grocerybot.png',
   userInterfaceStyle: 'automatic',
   scheme: 'groceryapp',
-  splash: {
-    image: './assets/grocerybot.png',
-    resizeMode: 'contain',
-    backgroundColor: '#0f172a',
-  },
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'net.grocerybot.app',
@@ -60,6 +55,16 @@ const config: ExpoConfig = {
     '@react-native-async-storage/expo-with-async-storage',
     'expo-updates',
     'expo-background-task',
+    'expo-status-bar',
+    'expo-web-browser',
+    [
+      'expo-splash-screen',
+      {
+        image: './assets/grocerybot.png',
+        resizeMode: 'contain',
+        backgroundColor: '#0f172a',
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,
