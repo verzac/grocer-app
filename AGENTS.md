@@ -17,6 +17,11 @@ Key locations:
 - `lib/storage/`: Secure Store and AsyncStorage persistence helpers.
 - `lib/config.ts` and `app.config.ts`: API base URL, OAuth client, redirect URI, app scheme, and EAS config.
 - `e2e.md`: local setup and manual end-to-end verification plan.
+- `docs/decisions/`: architecture and design decision records.
+
+## Decisions
+
+Record non-obvious architecture and design decisions under `docs/decisions/`. Filename format: `{YYYY-MM-DD}-{HHMM}-{title}.md` (e.g. `2026-06-27-2339-oauth-platform-split-completion.md`).
 
 ## Commands
 
