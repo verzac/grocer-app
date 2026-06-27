@@ -1,4 +1,4 @@
-name: EAS Update
+name: CI Jobs (Test, EAS Update)
 
 on:
   push:
@@ -6,8 +6,41 @@ on:
       - main
 
 jobs:
+  test:
+    name: CI
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Check formatting
+        run: pnpm run format:check
+
+      - name: Test
+        run: pnpm test
+
   update:
     name: Publish ${{ matrix.channel }} update
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -51,6 +84,7 @@ jobs:
 
   update-production:
     name: Publish production update
+    needs: test
     runs-on: ubuntu-latest
     environment: production
     permissions:
