@@ -31,8 +31,7 @@ Use pnpm.
 - Start dev server: `pnpm start`
 - Platform shortcuts: `pnpm run ios`, `pnpm run android`, `pnpm run web`
 - Type check: `pnpm run typecheck`
-- Check formatting: `pnpm run format:check`
-- Format files: `pnpm run format`
+- Format touched files: `pnpm run format:paths -- app/foo.tsx ...`
 
 There is no automated test suite in this repository yet. For behavior changes, run `pnpm run typecheck` and use the relevant checklist in `e2e.md`. Do not run EAS build, submit, or update commands unless explicitly requested.
 
@@ -63,6 +62,5 @@ When adding a new **non-code** top-level folder (docs, tooling, editor config, e
 Before handing off code changes:
 
 - Run `pnpm run typecheck`.
-- Run `pnpm run format:check` when formatting may have changed.
+- Run `pnpm run format:paths -- ...` on files you changed.
 - For OAuth, guild selection, grocery CRUD, token refresh, logout, or offline behavior, verify the matching section of `e2e.md` or state clearly what was not run.
-

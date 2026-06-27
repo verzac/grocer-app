@@ -17,9 +17,9 @@ The app has two screens involved in sign-in:
 
 After Discord auth, iOS and Android deliver the redirect differently:
 
-| Platform | What happens on redirect |
-|----------|--------------------------|
-| **iOS** | `ASWebAuthenticationSession` captures `groceryapp://auth/callback?…` in-process. Expo Router never receives a deep link. `useAuthRequest` sets `response.type === 'success'` on the login screen. |
+| Platform    | What happens on redirect                                                                                                                                                                                      |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **iOS**     | `ASWebAuthenticationSession` captures `groceryapp://auth/callback?…` in-process. Expo Router never receives a deep link. `useAuthRequest` sets `response.type === 'success'` on the login screen.             |
 | **Android** | Chrome Custom Tabs delivers the redirect as an intent. Expo Router opens `app/auth/callback.tsx` via the intent filter in `app.config.ts`. `useAuthRequest` also sets `response.type === 'success'` on login. |
 
 Earlier implementations hit two regressions:

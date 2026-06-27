@@ -518,7 +518,11 @@ export default function GroceriesScreen() {
                             entering={BounceIn.duration(240)}
                             exiting={ZoomOut.duration(90)}
                           >
-                            <Ionicons name="checkmark" size={16} color="#f8fafc" />
+                            <Ionicons
+                              name="checkmark"
+                              size={16}
+                              color="#f8fafc"
+                            />
                           </Animated.View>
                         ) : null}
                       </View>

@@ -7,7 +7,7 @@ alwaysApply: false
 No exceptions. When writing a SWR hook that does not exist yet, put it under `/hooks/data` e.g. `/hooks/data/useMyResource.ts`
 
 # Use Prettier for code formatting
-After you finish writing code, run `pnpm run format` which runs prettier under the hood to format the code. If you need to run it for a list of files, use `pnpm run format:paths -- app/foo.tsx`.
+After you finish writing code, run `pnpm run format:paths -- app/foo.tsx ...` on the files you changed.
 
 # Styling & design guide
 - use a multiple of 4 for paddings and margins. For example, 4px, 8px, 12px, 16px etc.

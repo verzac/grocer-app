@@ -34,10 +34,10 @@ Rationale:
 
 Workflow behavior on push to `main`:
 
-| Job | When | What |
-|-----|------|------|
-| `test` | First | `typecheck`, `format:check`, `pnpm test` |
-| `update` | After `test` | Matrix: `development`, `preview` — immediate |
+| Job                 | When         | What                                                 |
+| ------------------- | ------------ | ---------------------------------------------------- |
+| `test`              | First        | `typecheck`, `format:check`, `pnpm test`             |
+| `update`            | After `test` | Matrix: `development`, `preview` — immediate         |
 | `update-production` | After `test` | `production` — waits for GitHub Environment approval |
 
 Other conventions:
