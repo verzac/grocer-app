@@ -5,7 +5,7 @@ const EAS_PROJECT_ID = '16bf991e-d6e0-45c7-b22a-c2630c2052be'
 const config: ExpoConfig = {
   name: 'GroceryApp',
   slug: 'grocery-app',
-  version: '1.2.1',
+  version: '1.3.0',
   runtimeVersion: {
     policy: 'fingerprint',
   },
