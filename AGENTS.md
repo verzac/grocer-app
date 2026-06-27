@@ -54,6 +54,10 @@ There is no automated test suite in this repository yet. For behavior changes, r
 - Offline mode is read-only. Do not enable create or delete flows while the device is offline unless the app adds an explicit queued-write design.
 - Batch grocery deletion is capped at 100 ids per request.
 
+## CI
+
+When adding a new **non-code** top-level folder (docs, tooling, editor config, etc.), add a matching entry to `paths-ignore` in `.github/workflows/ci.yml` so pushes that touch only that folder do not run CI or EAS Update.
+
 ## Verification
 
 Before handing off code changes:

@@ -4,6 +4,15 @@ on:
   push:
     branches:
       - main
+    # Skipped when every changed file matches paths-ignore. Use workflow_dispatch to run manually.
+    paths-ignore:
+      - 'docs/**'
+      - '.cursor/**'
+      - '.github/**'
+      - '.claude/**'
+      - '**/*.md'
+      - '.gitignore'
+  workflow_dispatch:
 
 jobs:
   test:
