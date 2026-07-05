@@ -6,6 +6,7 @@ import useSWR from 'swr'
 
 import { GuildAvatar } from '@/components/GuildAvatar'
 import { Button } from '@/components/ui/Button'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useOnline } from '@/hooks/useOnline'
 import { unregisterGroceryBackgroundSync } from '@/lib/background/groceryBackgroundSync'
 import { getGuilds, signOut } from '@/lib/api/client'
@@ -18,6 +19,7 @@ import {
 } from '@/lib/storage/guildSelection'
 export default function GuildsScreen() {
   const router = useRouter()
+  const { isTabletLandscape } = useBreakpoint()
   const online = useOnline()
   const [cached, setCached] = useState<UserGuild[]>([])
   const [currentId, setCurrentId] = useState<string | null>(null)
@@ -88,13 +90,19 @@ export default function GuildsScreen() {
         }}
       />
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, isTabletLandscape && styles.footerRow]}>
         <Button
           title="Back"
           variant="secondary"
+          style={styles.footerButton}
           onPress={() => router.back()}
         />
-        <Button title="Log out" variant="danger" onPress={onLogout} />
+        <Button
+          title="Log out"
+          variant="danger"
+          style={styles.footerButton}
+          onPress={onLogout}
+        />
       </View>
     </SafeAreaView>
   )
@@ -157,5 +165,12 @@ const styles = StyleSheet.create({
   footer: {
     gap: 8,
     marginTop: 16,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  footerButton: {
+    flex: 1,
   },
 })
