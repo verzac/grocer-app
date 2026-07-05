@@ -158,6 +158,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0f172a',
     padding: 24,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   card: {
     backgroundColor: '#1e293b',
@@ -166,6 +167,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#334155',
     gap: 16,
+    maxWidth: 512,
   },
   titleRow: {
     flexDirection: 'row',
