@@ -21,6 +21,15 @@ import {
 } from '@/lib/storage/secureTokens'
 
 let refreshPromise: Promise<string | null> | null = null
+let authExpiredCallback: (() => void) | null = null
+
+export function onAuthExpired(cb: (() => void) | null) {
+  authExpiredCallback = cb
+}
+
+function notifyAuthExpired() {
+  authExpiredCallback?.()
+}
 
 async function refreshAccessToken(): Promise<string | null> {
   if (refreshPromise) return refreshPromise
@@ -74,6 +83,7 @@ export async function fetchWithAuth(
 
   const token = await getValidAccessToken()
   if (!token) {
+    notifyAuthExpired()
     return new Response(null, { status: 401 })
   }
   headers.set('Authorization', `Bearer ${token}`)
@@ -85,7 +95,10 @@ export async function fetchWithAuth(
 
   if (res.status === 401) {
     const next = await refreshAccessToken()
-    if (!next) return res
+    if (!next) {
+      notifyAuthExpired()
+      return res
+    }
     const h2 = new Headers(rest.headers)
     h2.set('Authorization', `Bearer ${next}`)
     if (guildId) h2.set('X-Guild-ID', guildId)
