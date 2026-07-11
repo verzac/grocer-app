@@ -183,6 +183,21 @@ export async function logoutSession(): Promise<void> {
   await clearTokens()
 }
 
+export async function demoLogin(password: string): Promise<TokenResponse> {
+  const res = await timedFetch(`${getApiBaseUrl()}/auth/demo-login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || `Demo login failed (${res.status})`)
+  }
+
+  return res.json() as Promise<TokenResponse>
+}
+
 export async function exchangeAuthCode(body: {
   code: string
   code_verifier: string

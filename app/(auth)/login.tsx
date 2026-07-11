@@ -147,6 +147,14 @@ export default function LoginScreen() {
             }
           }}
         />
+
+        <Text
+          accessibilityRole="link"
+          style={styles.subtleLink}
+          onPress={() => router.push('/magic-link')}
+        >
+          Other sign-in options
+        </Text>
       </View>
     </SafeAreaView>
   )
@@ -221,5 +229,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#93c5fd',
     textDecorationLine: 'underline',
+  },
+  subtleLink: {
+    fontSize: 13,
+    color: '#94a3b8',
+    textAlign: 'center',
   },
 })
