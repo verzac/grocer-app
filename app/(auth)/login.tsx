@@ -148,13 +148,15 @@ export default function LoginScreen() {
           }}
         />
 
-        <Text
-          accessibilityRole="link"
-          style={styles.subtleLink}
-          onPress={() => router.push('/magic-link')}
-        >
-          Other sign-in options
-        </Text>
+        {Platform.OS === 'ios' && (
+          <Text
+            accessibilityRole="link"
+            style={styles.subtleLink}
+            onPress={() => router.push('/magic-link')}
+          >
+            Other sign-in options
+          </Text>
+        )}
       </View>
     </SafeAreaView>
   )
