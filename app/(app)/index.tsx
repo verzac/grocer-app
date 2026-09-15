@@ -15,7 +15,14 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import Animated, { BounceIn, ZoomOut } from 'react-native-reanimated'
+import Animated, {
+  BounceIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  ZoomOut,
+} from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import useSWR from 'swr'
 
@@ -53,6 +60,7 @@ import {
 } from '@/lib/storage/groceryListSelection'
 
 const MAX_BULK_DELETE_IDS = 100
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
 export default function GroceriesScreen() {
   const router = useRouter()
@@ -217,6 +225,11 @@ export default function GroceriesScreen() {
   )
   const [actionError, setActionError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const listPickerPressProgress = useSharedValue(0)
+  const listPickerButtonAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: 1 - listPickerPressProgress.value * 0.18,
+    transform: [{ scale: 1 - listPickerPressProgress.value * 0.03 }],
+  }))
   const selectedCount = selectedEntryIds.length
   const selectedIdSet = useMemo(
     () => new Set(selectedEntryIds),
@@ -491,11 +504,25 @@ export default function GroceriesScreen() {
         <View style={styles.mainColumn}>
           {showGroceryListFilter && (
             <View style={styles.listPick}>
-              <Pressable
+              <AnimatedPressable
                 onPress={() => setListSelectorOpen(true)}
+                onPressIn={() => {
+                  listPickerPressProgress.value = withTiming(1, {
+                    duration: 80,
+                  })
+                }}
+                onPressOut={() => {
+                  listPickerPressProgress.value = withSpring(0, {
+                    damping: 18,
+                    stiffness: 300,
+                    mass: 0.5,
+                    overshootClamping: true,
+                  })
+                }}
                 disabled={!listFilterReady}
                 style={[
                   styles.listPickerButton,
+                  listPickerButtonAnimatedStyle,
                   !listFilterReady && styles.listPickerButtonDisabled,
                 ]}
                 accessibilityRole="button"
@@ -510,7 +537,7 @@ export default function GroceriesScreen() {
                   {selectedListLabel}
                 </Text>
                 <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
-              </Pressable>
+              </AnimatedPressable>
             </View>
           )}
 
