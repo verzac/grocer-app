@@ -17,6 +17,7 @@ import {
   getSelectedGuildId,
   setSelectedGuildId,
 } from '@/lib/storage/guildSelection'
+import { clearSelectedGroceryLists } from '@/lib/storage/groceryListSelection'
 export default function GuildsScreen() {
   const router = useRouter()
   const { isTabletLandscape } = useBreakpoint()
@@ -51,6 +52,7 @@ export default function GuildsScreen() {
   const onLogout = async () => {
     await signOut(online)
     await clearSelectedGuildId()
+    await clearSelectedGroceryLists()
     await unregisterGroceryBackgroundSync()
     console.log('###session: logged out')
     router.replace('/(auth)/login')

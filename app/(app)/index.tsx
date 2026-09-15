@@ -1,6 +1,7 @@
-import { useFocusEffect } from 'expo-router'
+import { BottomSheet, RNHostView } from '@expo/ui'
+import { presentationBackground } from '@expo/ui/swift-ui/modifiers'
 import Ionicons from '@react-native-vector-icons/ionicons'
-import { useRouter } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
@@ -45,8 +46,12 @@ import {
   getSelectedGuildId,
   setSelectedGuildId,
 } from '@/lib/storage/guildSelection'
+import {
+  getSelectedGroceryList,
+  setSelectedGroceryList,
+  type GroceryListSelection,
+} from '@/lib/storage/groceryListSelection'
 
-type ListPillId = 'all' | 'default' | number
 const MAX_BULK_DELETE_IDS = 100
 
 export default function GroceriesScreen() {
@@ -205,7 +210,11 @@ export default function GroceriesScreen() {
 
   const [newItem, setNewItem] = useState('')
   const [selectedEntryIds, setSelectedEntryIds] = useState<number[]>([])
-  const [listFilter, setListFilter] = useState<ListPillId>('all')
+  const [listFilter, setListFilter] = useState<GroceryListSelection>('all')
+  const [listSelectorOpen, setListSelectorOpen] = useState(false)
+  const [listFilterGuildId, setListFilterGuildId] = useState<string | null>(
+    null,
+  )
   const [actionError, setActionError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const selectedCount = selectedEntryIds.length
@@ -215,7 +224,7 @@ export default function GroceriesScreen() {
   )
 
   const listOptions = useMemo(() => {
-    const opts: { id: ListPillId; label: string }[] = [
+    const opts: { id: GroceryListSelection; label: string }[] = [
       { id: 'all', label: 'All Lists' },
       { id: 'default', label: 'Default' },
     ]
@@ -230,17 +239,67 @@ export default function GroceriesScreen() {
     return opts
   }, [groceryData])
 
-  /** No payload yet during first online fetch; avoid All/Default-only pills until data arrives. */
+  useEffect(() => {
+    if (!effectiveGuildId) {
+      setListFilter('all')
+      setListFilterGuildId(null)
+      return
+    }
+
+    let cancelled = false
+    const guildId = effectiveGuildId
+    setListFilterGuildId(null)
+    getSelectedGroceryList(guildId)
+      .catch(() => null)
+      .then((saved) => {
+        if (cancelled) return
+        setListFilter(saved ?? 'all')
+        setListFilterGuildId(guildId)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [effectiveGuildId])
+
+  const listFilterReady =
+    effectiveGuildId != null && listFilterGuildId === effectiveGuildId
+
+  useEffect(() => {
+    if (
+      !effectiveGuildId ||
+      !listFilterReady ||
+      groceryData == null ||
+      groceryData.guild_id !== effectiveGuildId ||
+      typeof listFilter !== 'number'
+    ) {
+      return
+    }
+    if (groceryData.grocery_lists.some((list) => list.id === listFilter)) return
+
+    setListFilter('all')
+    setSelectedGroceryList(effectiveGuildId, 'all').catch(() => {})
+  }, [effectiveGuildId, groceryData, listFilter, listFilterReady])
+
+  const onListFilterChange = (selection: GroceryListSelection) => {
+    if (!effectiveGuildId || !listFilterReady) return
+    setListFilter(selection)
+    setSelectedGroceryList(effectiveGuildId, selection).catch(() => {})
+  }
+
+  /** No payload yet during first online fetch; avoid an All/Default-only picker until data arrives. */
   const groceriesLoadingEmptyOnline =
     online && groceryLoading && groceryData == null
 
-  const showGroceryListFilterPills =
+  const showGroceryListFilter =
     !groceriesLoadingEmptyOnline &&
     (groceryData == null || (groceryData.grocery_lists?.length ?? 0) > 0)
 
-  const effectiveListFilter: ListPillId = showGroceryListFilterPills
-    ? listFilter
-    : 'all'
+  const effectiveListFilter: GroceryListSelection =
+    showGroceryListFilter && listFilterReady ? listFilter : 'all'
+
+  const selectedListLabel =
+    listOptions.find((item) => item.id === effectiveListFilter)?.label ??
+    'All Lists'
 
   const groceryListHeader = useMemo(() => {
     if (lastGroceryRefreshAtMs == null) return null
@@ -275,7 +334,7 @@ export default function GroceriesScreen() {
 
   const onAdd = async () => {
     const desc = newItem.trim()
-    if (!desc || !effectiveGuildId) return
+    if (!desc || !effectiveGuildId || !listFilterReady) return
     if (!online) {
       setActionError(
         'You need a connection to add items. Viewing still works offline.',
@@ -430,33 +489,28 @@ export default function GroceriesScreen() {
         {actionError && <Text style={styles.err}>{actionError}</Text>}
 
         <View style={styles.mainColumn}>
-          {showGroceryListFilterPills && (
+          {showGroceryListFilter && (
             <View style={styles.listPick}>
-              <Text style={styles.listPickLabel}>List</Text>
-              <FlatList
-                horizontal
-                data={listOptions}
-                keyExtractor={(item) => String(item.id)}
-                showsHorizontalScrollIndicator={false}
-                renderItem={({ item }) => {
-                  const selected = listFilter === item.id
-                  return (
-                    <Pressable
-                      onPress={() => setListFilter(item.id)}
-                      style={[styles.listPill, selected && styles.listPillOn]}
-                    >
-                      <Text
-                        style={[
-                          styles.listPillText,
-                          selected && styles.listPillTextOn,
-                        ]}
-                      >
-                        {item.label}
-                      </Text>
-                    </Pressable>
-                  )
+              <Pressable
+                onPress={() => setListSelectorOpen(true)}
+                disabled={!listFilterReady}
+                style={[
+                  styles.listPickerButton,
+                  !listFilterReady && styles.listPickerButtonDisabled,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={`Grocery list, ${selectedListLabel}`}
+                accessibilityState={{
+                  disabled: !listFilterReady,
+                  expanded: listSelectorOpen,
                 }}
-              />
+                testID="grocery-list-selector"
+              >
+                <Text style={styles.listPickerButtonText} numberOfLines={1}>
+                  {selectedListLabel}
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
+              </Pressable>
             </View>
           )}
 
@@ -565,13 +619,68 @@ export default function GroceriesScreen() {
               <Button
                 title="Add"
                 loading={busy}
-                disabled={!newItem.trim()}
+                disabled={!newItem.trim() || !listFilterReady}
                 onPress={onAdd}
               />
             </View>
           )}
         </View>
       </KeyboardAvoidingView>
+
+      <BottomSheet
+        isPresented={listSelectorOpen}
+        onDismiss={() => setListSelectorOpen(false)}
+        snapPoints={['half']}
+        modifiers={
+          Platform.OS === 'ios'
+            ? [presentationBackground('#0f172a')]
+            : undefined
+        }
+        testID="grocery-list-sheet"
+      >
+        <RNHostView>
+          <View style={styles.listSheetContent}>
+            <Text style={styles.listSheetTitle}>Select list</Text>
+            <FlatList
+              data={listOptions}
+              keyExtractor={(item) => String(item.id)}
+              nestedScrollEnabled
+              style={styles.listSheetList}
+              renderItem={({ item }) => {
+                const selected = effectiveListFilter === item.id
+                return (
+                  <Pressable
+                    onPress={() => {
+                      onListFilterChange(item.id)
+                      setListSelectorOpen(false)
+                    }}
+                    style={[
+                      styles.listSheetRow,
+                      selected && styles.listSheetRowSelected,
+                    ]}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: selected }}
+                    testID={`grocery-list-option-${String(item.id)}`}
+                  >
+                    <Text
+                      style={[
+                        styles.listSheetRowText,
+                        selected && styles.listSheetRowTextSelected,
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {item.label}
+                    </Text>
+                    {selected && (
+                      <Ionicons name="checkmark" size={20} color="#22c55e" />
+                    )}
+                  </Pressable>
+                )
+              }}
+            />
+          </View>
+        </RNHostView>
+      </BottomSheet>
     </SafeAreaView>
   )
 }
@@ -695,30 +804,64 @@ const styles = StyleSheet.create({
   listPick: {
     marginBottom: 12,
   },
-  listPickLabel: {
-    color: '#94a3b8',
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  listPill: {
+  listPickerButton: {
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: '#1e293b',
-    marginRight: 8,
+    paddingVertical: 9,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#334155',
+    backgroundColor: '#1e293b',
   },
-  listPillOn: {
-    backgroundColor: '#14532d',
-    borderColor: '#16a34a',
+  listPickerButtonDisabled: {
+    opacity: 0.5,
   },
-  listPillText: {
+  listPickerButtonText: {
+    flexShrink: 1,
+    color: '#f1f5f9',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  listSheetContent: {
+    flex: 1,
+    overflow: 'hidden',
+    borderRadius: 12,
+    backgroundColor: '#0f172a',
+  },
+  listSheetTitle: {
+    color: '#f8fafc',
+    fontSize: 20,
+    fontWeight: '700',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  listSheetList: {
+    flex: 1,
+  },
+  listSheetRow: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  listSheetRowSelected: {
+    borderRadius: 16,
+    backgroundColor: '#1e293b',
+  },
+  listSheetRowText: {
+    flex: 1,
     color: '#cbd5e1',
-    fontSize: 13,
+    fontSize: 16,
   },
-  listPillTextOn: {
-    color: '#ecfccb',
+  listSheetRowTextSelected: {
+    color: '#f8fafc',
     fontWeight: '600',
   },
   section: {
