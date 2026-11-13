@@ -47,6 +47,7 @@ const config: ExpoConfig = {
   web: {
     favicon: './assets/grocerybot.png',
     bundler: 'metro',
+    output: 'single',
   },
   plugins: [
     'expo-dev-client',
