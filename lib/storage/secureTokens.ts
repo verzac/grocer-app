@@ -6,6 +6,10 @@ const EXPIRES_AT = 'gb_access_expires_at_ms'
 const PENDING_CODE_VERIFIER = 'gb_pending_code_verifier'
 const PENDING_OAUTH_STATE = 'gb_pending_oauth_state'
 
+const tokenStoreOptions: SecureStore.SecureStoreOptions = {
+  keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
+}
+
 export async function getAccessToken(): Promise<string | null> {
   return SecureStore.getItemAsync(ACCESS)
 }
@@ -20,9 +24,13 @@ export async function setTokens(
   expiresInSeconds: number,
 ): Promise<void> {
   const expiresAt = Date.now() + expiresInSeconds * 1000 - 30_000
-  await SecureStore.setItemAsync(ACCESS, access)
-  await SecureStore.setItemAsync(REFRESH, refresh)
-  await SecureStore.setItemAsync(EXPIRES_AT, String(expiresAt))
+  await SecureStore.setItemAsync(ACCESS, access, tokenStoreOptions)
+  await SecureStore.setItemAsync(REFRESH, refresh, tokenStoreOptions)
+  await SecureStore.setItemAsync(
+    EXPIRES_AT,
+    String(expiresAt),
+    tokenStoreOptions,
+  )
 }
 
 export async function clearTokens(): Promise<void> {
